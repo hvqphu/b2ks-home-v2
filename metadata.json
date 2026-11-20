@@ -1,0 +1,6 @@
+{
+  "name": "B2KS Daily Routines",
+  "description": "Game RPG Gia Đình B2KS: Nhiệm vụ hằng ngày, Sở thú ảo học tiếng Anh, Trung tâm giao dịch, Chợ trời, Phòng thí nghiệm sáng tạo và Khu vui chơi đối kháng.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

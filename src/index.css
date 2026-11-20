@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+.word-token {
+  display: inline-block;
+  padding: 1px 4px;
+  margin: 1px 1px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.12s ease;
+  border-bottom: 2px dashed rgba(22, 160, 133, 0.45);
+}
+
+.word-token:hover {
+  background-color: #FEF9E7;
+  color: #D35400;
+  transform: translateY(-1px);
+}
+
+.word-token.active-token {
+  background-color: #FFE66D;
+  color: #2C3E50;
+  font-weight: 700;
+}

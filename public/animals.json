@@ -1,0 +1,162 @@
+[
+  {
+    "id": "giant_panda",
+    "nameEn": "Giant Panda",
+    "nameVi": "Gấu Trúc Khổng Lồ",
+    "wikiTitle": "Giant_panda",
+    "ecosystem": "Rừng nhiệt đới",
+    "emoji": "🐼",
+    "unlockCost": 25,
+    "description": "The giant panda lives in misty bamboo forests in China. It spends almost twelve hours every single day eating fresh green bamboo shoots. Although it looks round and gentle, this black-and-white bear is a very good tree climber."
+  },
+  {
+    "id": "toco_toucan",
+    "nameEn": "Toco Toucan",
+    "nameVi": "Chim Toucan",
+    "wikiTitle": "Toco_toucan",
+    "ecosystem": "Rừng nhiệt đới",
+    "emoji": "🦜",
+    "unlockCost": 20,
+    "description": "The toco toucan is famous for its huge bright orange beak. Even though its beak looks very heavy, it is actually hollow and light inside. This colorful bird hops between tall jungle branches to eat sweet fruit and berries."
+  },
+  {
+    "id": "red_eyed_tree_frog",
+    "nameEn": "Red-Eyed Tree Frog",
+    "nameVi": "Ếch Cây Mắt Đỏ",
+    "wikiTitle": "Red-eyed_tree_frog",
+    "ecosystem": "Rừng nhiệt đới",
+    "emoji": "🐸",
+    "unlockCost": 18,
+    "description": "This tiny bright green frog sleeps under rainforest leaves during the daytime. When it wakes up at night, it opens its big ruby-red eyes to surprise hungry predators. Its sticky orange toes help it climb smooth wet leaves effortlessly."
+  },
+  {
+    "id": "orangutan",
+    "nameEn": "Orangutan",
+    "nameVi": "Đười Ươi",
+    "wikiTitle": "Orangutan",
+    "ecosystem": "Rừng nhiệt đới",
+    "emoji": "🦧",
+    "unlockCost": 35,
+    "description": "The orangutan is a clever red-haired ape that lives high in the rainforest canopy. It builds a cozy new nest out of leaves and branches every evening before going to sleep. Baby orangutans stay close to their mothers for many years to learn survival skills."
+  },
+  {
+    "id": "african_lion",
+    "nameEn": "African Lion",
+    "nameVi": "Sư Tử Châu Phi",
+    "wikiTitle": "Lion",
+    "ecosystem": "Thảo nguyên",
+    "emoji": "🦁",
+    "unlockCost": 40,
+    "description": "Known as the king of the savanna, the lion lives in family groups called prides. Male lions grow a thick golden mane around their heads to look strong and brave. Their mighty roar can be heard across the grassy plains from miles away."
+  },
+  {
+    "id": "giraffe",
+    "nameEn": "Giraffe",
+    "nameVi": "Hươu Cao Cổ",
+    "wikiTitle": "Giraffe",
+    "ecosystem": "Thảo nguyên",
+    "emoji": "🦒",
+    "unlockCost": 30,
+    "description": "The giraffe is the tallest animal walking on Earth today. Its extra-long neck helps it reach tender leaves at the very top of acacia trees. It also has a long dark tongue to protect it from the bright sunshine."
+  },
+  {
+    "id": "african_elephant",
+    "nameEn": "African Elephant",
+    "nameVi": "Voi Châu Phi",
+    "wikiTitle": "African_bush_elephant",
+    "ecosystem": "Thảo nguyên",
+    "emoji": "🐘",
+    "unlockCost": 45,
+    "description": "The African elephant is the largest land mammal in the world. It uses its flexible trunk to drink water, pick up food, and give itself cool dust baths. Elephants have giant ears that help keep their bodies cool under the hot sun."
+  },
+  {
+    "id": "cheetah",
+    "nameEn": "Cheetah",
+    "nameVi": "Báo Gê-pa",
+    "wikiTitle": "Cheetah",
+    "ecosystem": "Thảo nguyên",
+    "emoji": "🐆",
+    "unlockCost": 35,
+    "description": "The cheetah is the fastest runner on land and can sprint faster than a highway car. Black tear marks below its eyes protect it from the bright savanna sun while hunting. Its long tail helps it balance and turn sharply at high speed."
+  },
+  {
+    "id": "bottlenose_dolphin",
+    "nameEn": "Bottlenose Dolphin",
+    "nameVi": "Cá Heo Mũi Chai",
+    "wikiTitle": "Common_bottlenose_dolphin",
+    "ecosystem": "Đại dương",
+    "emoji": "🐬",
+    "unlockCost": 35,
+    "description": "The dolphin is a friendly and playful ocean mammal that breathes air through a blowhole. Dolphins talk to each other using special clicks, whistles, and joyful jumps above the waves. They live together in smart groups called pods and help each other find fish."
+  },
+  {
+    "id": "green_sea_turtle",
+    "nameEn": "Green Sea Turtle",
+    "nameVi": "Rùa Biển Xanh",
+    "wikiTitle": "Green_sea_turtle",
+    "ecosystem": "Đại dương",
+    "emoji": "🐢",
+    "unlockCost": 25,
+    "description": "The green sea turtle glides gracefully through warm tropical oceans using its strong front flippers. It can hold its breath underwater for hours while resting beside colorful coral reefs. Amazingly, mother turtles swim thousands of miles back to the exact beach where they were born."
+  },
+  {
+    "id": "blue_whale",
+    "nameEn": "Blue Whale",
+    "nameVi": "Cá Voi Xanh",
+    "wikiTitle": "Blue_whale",
+    "ecosystem": "Đại dương",
+    "emoji": "🐋",
+    "unlockCost": 55,
+    "description": "The blue whale is the biggest animal to have ever lived on our planet. Its heart alone is nearly as large as a small family car! Despite its enormous size, this gentle giant feeds mostly on tiny ocean creatures called krill."
+  },
+  {
+    "id": "clownfish",
+    "nameEn": "Clownfish",
+    "nameVi": "Cá Hề",
+    "wikiTitle": "Amphiprioninae",
+    "ecosystem": "Đại dương",
+    "emoji": "🐠",
+    "unlockCost": 20,
+    "description": "The bright orange clownfish wears white stripes just like a tiny ocean costume. It lives safely inside stinging sea anemones that protect it from bigger hungry fish. Clownfish gently fan the water around their home to keep it healthy and clean."
+  },
+  {
+    "id": "polar_bear",
+    "nameEn": "Polar Bear",
+    "nameVi": "Gấu Bắc Cực",
+    "wikiTitle": "Polar_bear",
+    "ecosystem": "Bắc Cực",
+    "emoji": "🐻‍❄️",
+    "unlockCost": 45,
+    "description": "The polar bear thrives on freezing Arctic sea ice thanks to its thick warm fur coat. Beneath its white fur, it actually has black skin that absorbs precious heat from the sun. Polar bears are powerful swimmers that can paddle across icy water for many miles."
+  },
+  {
+    "id": "arctic_fox",
+    "nameEn": "Arctic Fox",
+    "nameVi": "Cáo Tuyết Bắc Cực",
+    "wikiTitle": "Arctic_fox",
+    "ecosystem": "Bắc Cực",
+    "emoji": "🦊",
+    "unlockCost": 30,
+    "description": "The arctic fox changes its coat color with the seasons to stay hidden from danger. In snowy winter it wears pure white fur, while in summer its fur turns brown and gray. Its fluffy tail wraps around its nose like a warm scarf during freezing storms."
+  },
+  {
+    "id": "snowy_owl",
+    "nameEn": "Snowy Owl",
+    "nameVi": "Cú Tuyết",
+    "wikiTitle": "Snowy_owl",
+    "ecosystem": "Bắc Cực",
+    "emoji": "🦉",
+    "unlockCost": 30,
+    "description": "The snowy owl has bright golden eyes and snow-white feathers that blend into icy landscapes. Even its toes are covered in thick feathers to keep them cozy in freezing snow. Unlike many other owls, the snowy owl loves to hunt during the bright Arctic daytime."
+  },
+  {
+    "id": "narwhal",
+    "nameEn": "Narwhal",
+    "nameVi": "Kỳ Lân Biển",
+    "wikiTitle": "Narwhal",
+    "ecosystem": "Bắc Cực",
+    "emoji": "🦄",
+    "unlockCost": 50,
+    "description": "Often called the unicorn of the sea, the narwhal has a long spiral tusk growing from its head. That famous tusk is actually a giant sensitive tooth filled with millions of tiny nerve endings. Narwhals dive deep beneath Arctic ice sheets to hunt for fish in dark cold water."
+  }
+]

@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>B2KS Daily Routines</title>
+    <meta name="description" content="Game RPG Gia Đình B2KS: Nhiệm vụ hằng ngày, Sở thú ảo học tiếng Anh, Trung tâm giao dịch, Chợ trời, Phòng thí nghiệm sáng tạo và Khu vui chơi đối kháng.">
+    <meta property="og:title" content="B2KS Daily Routines">
+    <meta property="og:description" content="Game RPG Gia Đình B2KS: Nhiệm vụ hằng ngày, Sở thú ảo học tiếng Anh, Trung tâm giao dịch, Chợ trời, Phòng thí nghiệm sáng tạo và Khu vui chơi đối kháng.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="theme-color" content="#2C3E50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="B2KS Game">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <style>@import "https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap";:root{--primary:#ff6b6b;--secondary:#4ecdc4;--accent:#ffe66d;--dark:#2c3e50;--panel-bg:#fffffff7;--border-color:#2c3e50}*{box-sizing:border-box;-webkit-user-select:none;user-select:none;font-family:Fredoka,sans-serif}input,textarea,select{-webkit-user-select:text;user-select:text}body{background-color:#2c3e50;width:100vw;height:100dvh;margin:0;padding:0;overflow:hidden}.pixel-box{background:var(--panel-bg);border:3px solid var(--border-color);box-shadow:3px 3px 0px var(--border-color);border-radius:12px}.btn{background:var(--secondary);color:#fff;border:2.5px solid var(--border-color);box-shadow:0 3px 0 var(--border-color);cursor:pointer;white-space:nowrap;border-radius:8px;justify-content:center;align-items:center;gap:4px;padding:6px 10px;font-size:13px;font-weight:600;transition:transform 80ms;display:inline-flex}.btn:active{box-shadow:0 1px 0 var(--border-color);transform:translateY(2px)}.btn-primary{background:var(--primary)}.btn-accent{background:var(--accent);color:var(--dark)}.btn-purple{background:#9b59b6}.btn-danger{color:#fff;background:#e74c3c}.btn-sm{padding:4px 8px;font-size:12px}#top-hud{z-index:100;pointer-events:none;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:5px;display:flex;position:fixed;top:6px;left:6px;right:6px}.hud-group{pointer-events:auto;flex-wrap:wrap;align-items:center;gap:4px;display:flex}.profile-card{align-items:center;gap:6px;max-width:100%;padding:4px 8px;display:flex}.avatar-badge{border:2px solid var(--dark);background:var(--accent);border-radius:50%;flex-shrink:0;justify-content:center;align-items:center;width:30px;height:30px;font-size:16px;display:flex}.points-pill{background:var(--accent);border:2px solid var(--dark);color:var(--dark);border-radius:20px;padding:1px 6px;font-size:11px;font-weight:700}canvas#gameCanvas{width:100vw;height:100dvh;display:block}#rpg-chat-bar{z-index:95;align-items:center;gap:5px;width:440px;max-width:calc(100vw - 260px);padding:4px 7px;display:flex;position:fixed;bottom:12px;left:50%;transform:translate(-50%)}#rpg-chat-bar input{border:2px solid var(--dark);background:#fff;border-radius:8px;outline:none;flex:1;min-width:0;padding:5px 8px;font-size:13px}#rpg-chat-bar button{flex-shrink:0}#chat-log-popup{z-index:96;width:440px;max-width:calc(100vw - 24px);max-height:200px;padding:10px;font-size:13px;display:none;position:fixed;bottom:64px;left:50%;overflow-y:auto;transform:translate(-50%)}#interact-prompt{z-index:90;transition:bottom .16s;animation:.6s infinite alternate bounce;display:none;position:fixed;bottom:66px;left:50%;transform:translate(-50%)}.phone-unread-channel{animation:1.4s infinite pulseUnreadTab;color:#991b1b!important;background:#fef2f2!important;border-color:#ef4444!important;box-shadow:0 3px #dc2626!important}@keyframes pulseUnreadTab{0%,to{box-shadow:0 3px #dc2626}50%{box-shadow:0 3px 10px #ef44448c}}.msg-bubble-row.msg-unread-new .msg-bubble{box-shadow:0 2px 8px #eab30859;color:#1e293b!important;background:#fef9c3!important;border-color:#eab308!important}@keyframes bounce{0%{transform:translate(-50%)}to{transform:translate(-50%,-6px)}}#mobile-controls{z-index:95;touch-action:none;width:90px;height:90px;position:fixed;bottom:12px;left:10px}#joystick-base{background:#2c3e5059;border:3px solid #ffffffd9;border-radius:50%;width:100%;height:100%;position:relative}#joystick-knob{border:3px solid var(--dark);pointer-events:none;background:#fffffff2;border-radius:50%;width:34px;height:34px;position:absolute;top:25px;left:25px}.modal-overlay{z-index:200;background:#0009;justify-content:center;align-items:center;padding:10px;display:none;position:fixed;inset:0}.modal-content{width:100%;max-width:660px;max-height:88dvh;padding:14px;position:relative;overflow-y:auto}.modal-header{border-bottom:3px solid var(--dark);justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;display:flex}.modal-header h2{color:var(--dark);margin:0;font-size:17px}.grid-2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;display:grid}.card-item{border:2.5px solid var(--dark);background:#fff;border-radius:10px;flex-direction:column;justify-content:space-between;gap:6px;padding:10px;display:flex}.form-group{margin-bottom:10px}.form-group label{margin-bottom:4px;font-size:13px;font-weight:600;display:block}.form-group input,.form-group select,.form-group textarea{border:2px solid var(--dark);border-radius:6px;width:100%;padding:7px;font-size:14px}.tag{background:#eee;border:1px solid #999;border-radius:10px;padding:2px 6px;font-size:10.5px;font-weight:700;display:inline-block}.room-tabs{flex-wrap:wrap;gap:6px;display:flex}.visual-grid{grid-template-columns:repeat(4,1fr);gap:8px;display:grid}.visual-option-card{cursor:pointer;text-align:center;background:#f8f9f9;border:2.5px solid #bdc3c7;border-radius:10px;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;font-size:11px;font-weight:600;transition:all .12s;display:flex}.visual-option-card.selected{background:#fff0f0;border-color:#ff6b6b;transform:translateY(-1px);box-shadow:0 2px #ff6b6b}.swatch-grid{flex-wrap:wrap;gap:8px;display:flex}.color-swatch{cursor:pointer;border:3px solid #2c3e50;border-radius:50%;width:32px;height:32px;transition:transform .1s}.color-swatch.selected{transform:scale(1.18);box-shadow:0 0 0 3px #ffe66d,0 0 0 5px #2c3e50}#toast-container{z-index:300;pointer-events:none;flex-direction:column;gap:6px;width:90%;max-width:380px;display:flex;position:fixed;top:86px;left:50%;transform:translate(-50%)}.toast{background:var(--dark);color:var(--accent);text-align:center;border:2.5px solid #fff;border-radius:20px;padding:8px 14px;font-size:13px;font-weight:600;animation:3.2s forwards fadeInOut;box-shadow:0 4px 10px #00000059}@keyframes fadeInOut{0%{opacity:0;transform:translateY(-10px)}15%{opacity:1;transform:translateY(0)}85%{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-10px)}}.preview-img{border:2px solid var(--dark);object-fit:contain;border-radius:8px;max-width:100%;max-height:160px}.member-switcher-wrap{position:relative}.member-switch-btn{color:var(--dark);border:2px solid var(--dark);cursor:pointer;box-shadow:0 2px 0 var(--dark);background:#fef9e7;border-radius:8px;align-items:center;gap:4px;padding:4px 8px;font-size:11.5px;font-weight:700;display:inline-flex}.member-switch-btn:active{box-shadow:0 1px 0 var(--dark);transform:translateY(1px)}.member-dropdown-menu{border:3px solid var(--dark);min-width:215px;box-shadow:4px 4px 0 var(--dark);z-index:250;background:#fff;border-radius:12px;flex-direction:column;gap:5px;padding:6px;display:none;position:absolute;top:calc(100% + 6px);right:0}.member-dropdown-menu.open{display:flex}.member-option-item{cursor:pointer;color:var(--dark);text-align:left;background:#f8f9f9;border:2px solid #0000;border-radius:8px;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;transition:background .1s;display:flex}.member-option-item:hover{background:#ebf5fb;border-color:#85c1e9}.member-option-item.active{background:#fef9e7;border-color:#f39c12}.smartphone-hud-btn{color:#fff;border:2.5px solid var(--border-color);box-shadow:0 3px 0 var(--border-color);cursor:pointer;background:linear-gradient(135deg,#2c3e50,#34495e);border-radius:10px;align-items:center;gap:5px;padding:4px 9px;font-size:13px;font-weight:700;display:inline-flex;position:relative}.smartphone-hud-btn:active{box-shadow:0 1px 0 var(--border-color);transform:translateY(2px)}.unread-badge-dot{color:#fff;text-align:center;background:#e74c3c;border:2px solid #fff;border-radius:999px;min-width:18px;padding:1px 5px;font-size:10px;font-weight:700;animation:1.2s infinite pulseBadge;position:absolute;top:-7px;right:-7px;box-shadow:0 2px 4px #0000004d}@keyframes pulseBadge{0%,to{transform:scale(1)}50%{transform:scale(1.15)}}.phone-frame{background:#1c2833;border:5px solid #111827;border-radius:34px;flex-direction:column;width:100%;max-width:390px;height:84dvh;max-height:690px;padding:10px;display:flex;position:relative;box-shadow:0 14px 32px #0000008c,inset 0 0 0 2px #4b5563}.phone-notch{background:#111827;border-radius:0 0 12px 12px;justify-content:center;align-items:center;gap:6px;width:110px;height:16px;margin:0 auto 4px;display:flex}.phone-notch span{background:#374151;border-radius:4px;width:32px;height:4px}.phone-screen{background:linear-gradient(160deg,#ebf5fb 0%,#fdf2e9 55%,#eafaf1 100%);border:2px solid #2c3e50;border-radius:24px;flex-direction:column;flex:1;display:flex;overflow:hidden}.phone-status-bar{color:#fff;background:#2c3e50eb;justify-content:space-between;align-items:center;padding:5px 14px;font-size:11.5px;font-weight:700;display:flex}.phone-app-icon-btn{cursor:pointer;background:#fff;border:2.5px solid #2c3e50;border-radius:18px;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;transition:transform 80ms;display:flex;position:relative;box-shadow:0 4px #2c3e50}.phone-app-icon-btn:active{transform:translateY(2px);box-shadow:0 2px #2c3e50}.phone-home-bar{justify-content:center;padding:7px 0 3px;display:flex}.msg-bubble-row{flex-direction:column;max-width:82%;display:flex}.msg-bubble-row.me{align-self:flex-end;align-items:flex-end}.msg-bubble-row.other{align-self:flex-start;align-items:flex-start}.msg-bubble{word-break:break-word;border:2px solid #2c3e50;border-radius:14px;padding:7px 11px;font-size:13px;line-height:1.35}.msg-bubble-row.me .msg-bubble{color:#fff;background:#3498db;border-bottom-right-radius:4px}.msg-bubble-row.other .msg-bubble{color:#2c3e50;background:#fff;border-bottom-left-radius:4px}.puzzle-letter-slot{color:#2c3e50;text-transform:uppercase;background:#fff;border:2.5px solid #2c3e50;border-radius:8px;justify-content:center;align-items:center;width:34px;height:40px;font-size:20px;font-weight:700;display:inline-flex}.puzzle-letter-slot.missing{color:#d35400;background:#fef9e7;border-color:#e67e22;box-shadow:inset 0 -3px #f39c12}@media (width<=720px){#rpg-chat-bar{width:auto;max-width:none;bottom:12px;left:108px;right:8px;transform:none}.btn{padding:4px 7px;font-size:11.5px}.visual-grid{grid-template-columns:repeat(2,1fr)}#minimap-container{width:132px!important;top:98px!important;right:6px!important}#minimap-canvas{width:124px!important;height:84px!important}}#minimap-container{z-index:92;background:#fffffff0;flex-direction:column;gap:4px;width:180px;padding:4px;display:none;position:fixed;top:64px;right:8px}#minimap-canvas{cursor:pointer;background:#4ade80;border:2px solid #2c3e50;border-radius:7px;width:168px;height:114px;display:block}body.parent-mini-minimized #top-hud,body.parent-mini-minimized #minimap-container,body.parent-mini-minimized #zoom-controls,body.parent-mini-minimized #mobile-controls,body.parent-mini-minimized #interact-prompt,body.parent-mini-minimized #rpg-chat-bar{display:none!important}</style>
+  <script type="module" crossorigin src="./assets/index-D9fJ7m4i.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-D7Pxz9Kx.css">
+<link rel="manifest" href="./manifest.webmanifest"></head>
+<body>
+
+    <!-- TOP HUD -->
+    <div id="top-hud">
+        <div class="hud-group">
+            <div class="pixel-box profile-card">
+                <div class="avatar-badge" id="hud-avatar">👨</div>
+                <div style="font-weight: 700; font-size: 13px; display:flex; align-items:center; gap:5px;">
+                    <span id="hud-family-badge" class="tag" style="background:#D1FAE5; border-color:#059669; color:#065F46; font-weight:800;">🏡 B2KS</span>
+                    <span id="hud-name">Bố</span>
+                    <span class="tag" id="hud-role">Bố</span>
+                    <span class="points-pill" id="hud-points">200⭐</span>
+                    <span id="hud-weather-pill" class="tag" style="background:#E0F2FE; border-color:#0284C7; color:#075985; font-weight:700;" title="Thời tiết thực tế ngoài đời">🌤️ ...</span>
+                </div>
+                <button type="button" class="smartphone-hud-btn" id="hud-smartphone-btn" onclick="openSmartphoneModal()" title="Mở Smartphone cá nhân">
+                    📱 <span style="font-size:12px;">Điện thoại</span>
+                    <span class="unread-badge-dot" id="hud-phone-unread-badge" style="display:none;">0</span>
+                </button>
+                <div class="member-switcher-wrap" id="member-switcher-wrap" style="display:flex; gap:4px; align-items:center;">
+                    <span id="hud-device-lock-tag" class="tag" style="display:none; background:#FADBD8; border-color:#E74C3C; color:#922B21;">🔒 Khóa máy</span>
+                    <button type="button" class="member-switch-btn" id="member-switch-btn" onclick="requestParentAccess(() => toggleMemberDropdown(event))">
+                        🔄 Đổi người ▾
+                    </button>
+                    <div class="member-dropdown-menu" id="member-dropdown-menu"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hud-group" id="hud-actions-group">
+            <button class="btn btn-accent" onclick="openModal('bag-modal')">🎒 Túi đồ</button>
+            <button class="btn" style="background:#F59E0B;" onclick="openPetCollectionModal()">🐾 Thú cưng</button>
+            <button class="btn" id="hud-guide-btn" style="background:#34495E;" onclick="openModal('guide-modal')">❓ Hướng dẫn</button>
+            <button type="button" class="btn" id="hud-more-toggle-btn" style="background:#475569; min-width:34px; padding:6px 10px;" onclick="toggleHudTools()" title="Mở rộng / Thu gọn thanh công cụ">&gt;</button>
+            <span id="hud-extra-tools" style="display:none; gap:6px; flex-wrap:wrap; align-items:center;">
+                <button class="btn btn-purple" onclick="openModal('custom-modal')">🎨 Tùy chỉnh</button>
+                <button class="btn" id="hud-parental-btn" style="background:#D97706; position:relative;" onclick="requestParentAccess(() => openReactModal('parental_dashboard'))">
+                    📊 Phụ Huynh
+                    <span class="unread-badge-dot" id="hud-parent-pending-badge" style="display:none;">0</span>
+                </button>
+                <button class="btn" id="hud-mini-window-btn" style="background:#0284C7; display:none;" onclick="openParentMiniWindow()" title="Thu nhỏ nổi trên cùng theo dõi thành viên">🪟 Thu nhỏ</button>
+                <button class="btn" onclick="openModal('donate-modal')">🎁 Tặng điểm</button>
+                <button class="btn" id="hud-family-sync-btn" style="background:#0F766E;" onclick="requestParentAccess(() => openModal('family-sync-modal'))">🔗 Gia đình &amp; PIN</button>
+                <button class="btn" style="background:#27AE60;" id="audio-toggle-btn" onclick="toggleAudio()">🔊 Nhạc</button>
+                <span id="hud-sound-slot"></span>
+                <span id="hud-pwa-slot"></span>
+            </span>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- NEIGHBORHOOD MINIMAP + NAVIGATION ARROW OVERLAY -->
+    <div id="minimap-container" class="pixel-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; font-weight:700; color:#2C3E50; padding:0 2px;">
+            <span>🗺️ Bản đồ Khu phố</span>
+            <button type="button" onclick="openSmartphoneModal('maps')" style="border:none; background:#E0F2FE; color:#0369A1; border-radius:6px; padding:1px 5px; font-size:9.5px; font-weight:700; cursor:pointer;">🧭 Chỉ đường</button>
+        </div>
+        <canvas id="minimap-canvas" width="168" height="114" onclick="openSmartphoneModal('maps')" title="Bấm để chọn địa điểm chỉ đường trên Điện thoại"></canvas>
+        <div id="minimap-nav-banner" style="display:none; background:#FEF3C7; border:1.5px solid #D97706; border-radius:6px; padding:3px 5px; font-size:10px; font-weight:700; color:#92400E; align-items:center; justify-content:space-between; gap:4px;">
+            <span id="minimap-nav-label" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></span>
+            <button type="button" onclick="cancelNavigationTarget()" style="border:none; background:#EF4444; color:#FFF; border-radius:4px; padding:1px 4px; font-size:9px; font-weight:700; cursor:pointer; flex-shrink:0;">✖</button>
+        </div>
+    </div>
+
+    <!-- MAIN CANVAS -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- ZOOM CONTROLS -->
+    <div id="zoom-controls" style="position:fixed; right:10px; bottom:115px; z-index:95; display:flex; flex-direction:column; gap:6px;">
+        <button class="btn btn-accent" style="width:38px; height:38px; font-size:18px; padding:0;" onclick="changeZoom(0.15)" title="Phóng to (Zoom In)">➕</button>
+        <button class="btn" style="width:38px; height:38px; font-size:11px; padding:0; background:#2C3E50;" id="zoom-level-btn" onclick="resetZoom()" title="Đặt lại thu phóng">100%</button>
+        <button class="btn btn-accent" style="width:38px; height:38px; font-size:18px; padding:0;" onclick="changeZoom(-0.15)" title="Thu nhỏ (Zoom Out)">➖</button>
+    </div>
+
+    <!-- FLOATING INTERACTION PROMPT -->
+    <div id="interact-prompt">
+        <button class="btn btn-accent" style="font-size: 14px; padding: 8px 16px;" id="interact-btn" onclick="triggerInteraction()">
+            🏠 Vào nhà
+        </button>
+    </div>
+
+    <!-- ROBLOX-STYLE JOYSTICK -->
+    <div id="mobile-controls">
+        <div id="joystick-base">
+            <div id="joystick-knob"></div>
+        </div>
+    </div>
+
+    <!-- RPG CHAT LOG POPUP -->
+    <div id="chat-log-popup" class="pixel-box">
+        <div style="display:flex; justify-content:space-between; border-bottom:2px solid #ccc; padding-bottom:4px; margin-bottom:6px;">
+            <b>📜 Nhật ký hội thoại</b>
+            <span style="cursor:pointer; font-weight:bold;" onclick="toggleChatLog()">✖</span>
+        </div>
+        <div id="chat-log-list" style="display:flex; flex-direction:column; gap:4px;"></div>
+    </div>
+
+    <!-- RPG SPEECH INPUT BAR (Contextual) -->
+    <div id="rpg-chat-bar" class="pixel-box" style="display: none;">
+        <button class="btn btn-sm" style="background:#34495E;" onclick="toggleChatLog()" title="Xem lịch sử chat">📜</button>
+        <input type="text" id="chat-input" placeholder="Nói tiếng Anh +2⭐..." onkeypress="if(event.key==='Enter') sendChat()">
+        <button class="btn btn-sm btn-accent" onclick="sendChat()">💬 Nói</button>
+        <button class="btn btn-sm" style="background:#64748B; padding:4px 7px;" onclick="hideContextualChatBar()" title="Ẩn khung chat">✖</button>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- 1. GUIDE MODAL -->
+    <div class="modal-overlay" id="guide-modal" style="display: none;">
+        <div class="modal-content pixel-box">
+            <div class="modal-header">
+                <h2 id="guide-title-brand">🏡 B2KS Daily Routines — Khu Phố Gia Đình</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('guide-modal'); startAudioOnce();">Bắt đầu chơi ▶</button>
+            </div>
+            <div style="font-size: 14px; line-height: 1.55;">
+                <p><b>🕹️ Di chuyển tự do:</b> Dùng phím <b>Mũi tên / W A S D</b> hoặc <b>Joystick</b> góc dưới bên trái màn hình.</p>
+                <p><b>🌟 Các khu vực mới trên bản đồ Khu Phố:</b></p>
+                <ul>
+                    <li><b>🐾 Cửa Hàng Thú Cưng B2KS:</b> Đổi điểm nhận trứng (10 loài thú cưng!), ấp nở &amp; cho ăn để thú cưng tiến hóa đồng hành, tăng tốc độ &amp; điểm sao!</li>
+                    <li><b>🌌 Trung Tâm Giao Dịch Xuyên Thế Giới:</b> Quy đổi điểm sao lấy tiền mặt hoặc đặc quyền thật ngoài đời!</li>
+                    <li><b>⚽ Sân Bóng Đá B2KS (Miễn phí):</b> Hỗ trợ đấu 1P, đấu 2 người Online 1v1 &amp; đứng xem trực tiếp làm khán giả!</li>
+                    <li><b>🗺️ Minimap &amp; 🧭 Chỉ đường Điện thoại:</b> Xem bản đồ thu nhỏ góc phải &amp; chọn địa điểm trên Điện thoại để bật mũi tên dẫn đường!</li>
+                    <li><b>🦁 Sở Thú Ảo &amp; 🎪 Chợ Trời &amp; 📊 Bảng Phụ Huynh:</b> Học tiếng Anh, mua bán đồ &amp; theo dõi trạng thái qua Mini Window!</li>
+                </ul>
+                <p><b>💬 Bong bóng hội thoại &amp; Điểm thưởng:</b></p>
+                <ul>
+                    <li>Khi đứng gần mọi người, Công viên Tiếng Anh hoặc Góc đọc sách, thanh chat sẽ tự động hiện để bạn gõ câu tiếng Anh (không lặp lại câu cũ, giãn cách 30s) nhận <b>+2⭐</b>!</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. HOUSE INFO MODAL -->
+    <div class="modal-overlay" id="house-modal">
+        <div class="modal-content pixel-box" style="max-width:520px;">
+            <div class="modal-header">
+                <h2 id="house-modal-title">🏢 Nhà Phố Gia Đình B2KS</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('house-modal')">Đóng</button>
+            </div>
+            <p style="margin-top:0;"><b>👨‍👩‍👧‍👦 Thành viên &amp; Vị trí hiện tại:</b></p>
+            <div id="family-members-list" class="grid-2" style="margin-bottom: 15px;"></div>
+            <button class="btn btn-accent" style="width:100%; justify-content:center; font-size:15px; padding:10px;" onclick="enterHouseScene()">
+                🚪 Bước vào bên trong Nhà ➔
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. TASKS & HOMEWORK MODAL -->
+    <div class="modal-overlay" id="tasks-modal">
+        <div class="modal-content pixel-box">
+            <div class="modal-header">
+                <h2>📋 Bảng Nhiệm Vụ &amp; Bài Tập</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('tasks-modal')">Đóng</button>
+            </div>
+
+            <div id="parent-task-creator" style="background:#FFF8E7; padding:12px; border:2px solid var(--dark); border-radius:8px; margin-bottom:15px;">
+                <h3 style="margin-top:0; font-size:15px;">➕ Giao việc / Nhiệm vụ đồng đội mới</h3>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Loại nhiệm vụ:</label>
+                        <select id="task-type" onchange="toggleHomeworkUpload()">
+                            <option value="chore">🧹 Việc nhà / Thói quen tốt</option>
+                            <option value="homework">📚 Bài tập học tập (Chấm điểm 10)</option>
+                            <option value="family_quest">🤝 Nhiệm vụ Đồng đội (Cả hai bé)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="task-assignee-group">
+                        <label>Giao cho con:</label>
+                        <select id="task-assignee"></select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Tên nhiệm vụ / Bài tập:</label>
+                        <input type="text" id="task-title" placeholder="VD: Quét nhà tầng 1, Cùng dọn đồ chơi...">
+                    </div>
+                    <div class="form-group">
+                        <label>Điểm thưởng (Mỗi bé):</label>
+                        <input type="number" id="task-reward" value="20" min="5" max="100">
+                    </div>
+                </div>
+                <div class="form-group" id="parent-file-group" style="display:none;">
+                    <label>📎 Đính kèm ảnh/tài liệu đề bài:</label>
+                    <input type="file" id="task-parent-file" accept="image/*,.pdf,.doc,.docx,.txt">
+                </div>
+                <button class="btn btn-primary" onclick="createTask()">Giao nhiệm vụ ngay</button>
+            </div>
+
+            <h3 style="font-size:15px;">📌 Danh sách nhiệm vụ hiện tại</h3>
+            <div id="tasks-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+    </div>
+
+    <!-- 4. SUPERMARKET MODAL -->
+    <div class="modal-overlay" id="shop-modal">
+        <div class="modal-content pixel-box" style="background:linear-gradient(180deg,#FFFDF2 0%,#FEF5E7 100%); border-color:#D35400;">
+            <div class="modal-header" style="background:linear-gradient(90deg,#E67E22,#D35400); color:#FFF; margin:-16px -16px 12px -16px; padding:12px 16px; border-radius:13px 13px 0 0; border-bottom:3px solid #2C3E50;">
+                <h2 id="shop-modal-title" style="color:#FFF; text-shadow:1px 1px 0 #7E5109;">🏪 Siêu Thị Gia Đình B2KS — Khu Mua Sắm</h2>
+                <button class="btn btn-sm" style="background:#FFF; color:#D35400;" onclick="closeModal('shop-modal')">✖ Đóng</button>
+            </div>
+            <div id="shop-npc-banner" style="background:#FFF; border:2.5px solid #F39C12; border-radius:12px; padding:10px 12px; margin-bottom:10px; font-size:13px; display:flex; align-items:center; gap:10px; box-shadow:0 3px 0 rgba(243,156,18,0.25);">
+                <span style="font-size:28px; background:#FEF9E7; padding:6px; border-radius:50%; border:2px solid #F39C12;">👩‍💼</span>
+                <div>
+                    <div style="font-weight:700; color:#D35400;">Quầy Thu Ngân • Cô Linh</div>
+                    <div id="shop-npc-greeting">&ldquo;Chào mừng quý khách tới Siêu Thị B2KS! Chọn kệ hàng bên dưới để đổi điểm lấy nội thất phòng &amp; thẻ xem YouTube nhé! (Đặc quyền ngoài đời hãy ghé <b>🌌 Trung Tâm Xuyên Thế Giới</b>)&rdquo;</div>
+                </div>
+            </div>
+            <div class="room-tabs" style="margin-bottom:12px; background:#FDEBD0; padding:6px; border-radius:10px; border:2px solid #E67E22;">
+                <button class="btn btn-sm btn-accent" onclick="renderShop('decor')">🛋️ Kệ Nội Thất Phòng</button>
+                <button class="btn btn-sm btn-danger" onclick="renderShop('tv_card')">📺 Quầy Thẻ YouTube</button>
+            </div>
+            <div id="shop-items-grid" class="grid-2"></div>
+        </div>
+    </div>
+
+    <!-- 4B. PERSONAL BAG / INVENTORY MODAL -->
+    <div class="modal-overlay" id="bag-modal">
+        <div class="modal-content pixel-box">
+            <div class="modal-header">
+                <h2>🎒 Túi Đồ Cá Nhân (<span id="bag-owner-name"></span>)</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('bag-modal')">Đóng</button>
+            </div>
+            <div class="room-tabs" style="margin-bottom:12px;">
+                <button class="btn btn-sm btn-accent" onclick="renderBagModal('decor')">🛋️ Đồ trang trí</button>
+                <button class="btn btn-sm btn-purple" onclick="renderBagModal('lab')">🧪 Vật phẩm chế tạo</button>
+                <button class="btn btn-sm btn-danger" onclick="renderBagModal('tv_card')">📺 Thẻ YouTube</button>
+                <button class="btn btn-sm btn-primary" onclick="renderBagModal('outfit')">👗 Trang phục</button>
+                <button class="btn btn-sm" style="background:#E67E22;" onclick="renderBagModal('voucher')">🎟️ Phiếu quà</button>
+            </div>
+            <div id="bag-items-grid" class="grid-2"></div>
+        </div>
+    </div>
+
+    <!-- 4C. FASHION BOUTIQUE MODAL -->
+    <div class="modal-overlay" id="fashion-modal">
+        <div class="modal-content pixel-box" style="background:linear-gradient(180deg,#FFF5F8 0%,#FCE4EC 100%); border-color:#C2185B;">
+            <div class="modal-header" style="background:linear-gradient(90deg,#EC407A,#AD1457); color:#FFF; margin:-16px -16px 12px -16px; padding:12px 16px; border-radius:13px 13px 0 0; border-bottom:3px solid #2C3E50;">
+                <h2 id="fashion-modal-title" style="color:#FFF;">👗 B2KS Fashion Boutique &amp; Sàn Thử Đồ</h2>
+                <button class="btn btn-sm" style="background:#FFF; color:#AD1457;" onclick="closeFashionModal()">✖ Đóng</button>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center; background:#FFF; border:2.5px solid #E91E63; border-radius:14px; padding:10px; margin-bottom:10px; flex-wrap:wrap; box-shadow:0 4px 10px rgba(233,30,99,0.12);">
+                <div style="text-align:center; margin:0 auto;">
+                    <div style="padding:4px; background:linear-gradient(135deg,#F8BBD0,#F48FB1); border-radius:12px;">
+                        <canvas id="fashion-tryon-canvas" width="104" height="120" style="width:104px; height:120px; background:#FFF; border-radius:9px; border:2.5px solid #880E4F;"></canvas>
+                    </div>
+                    <div id="fashion-tryon-status" style="font-size:11px; font-weight:700; color:#AD1457; margin-top:4px;">🪞 Gương Soi Thời Trang</div>
+                </div>
+                <div style="flex:1; min-width:200px; font-size:12.5px; line-height:1.45;">
+                    <div><span style="font-size:20px;">💃</span> <b style="color:#AD1457;">Nhà Thiết Kế Vy:</b> &ldquo;Bấm <b>👀 Try on</b> để ướm thử lên gương trước khi đổi điểm nhé! Đồ mua xong sẽ tự động treo trong <b>Tủ quần áo phòng riêng</b>.&rdquo;</div>
+                    <div id="fashion-tryon-controls" style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                        <span class="tag" style="background:#FCE4EC; border-color:#E91E63;">Đang mặc trang phục hiện tại</span>
+                    </div>
+                </div>
+            </div>
+            <div class="room-tabs" style="margin-bottom:12px; background:#F8BBD0; padding:6px; border-radius:10px;">
+                <button class="btn btn-sm" id="fashion-tab-set" style="background:#C2185B;" onclick="renderFashionStore('set')">👔 Bộ Set Đầy Đủ</button>
+                <button class="btn btn-sm" id="fashion-tab-shirt" style="background:#E91E63;" onclick="renderFashionStore('shirt')">👕 Áo Riêng</button>
+                <button class="btn btn-sm" id="fashion-tab-pants" style="background:#3B82F6;" onclick="renderFashionStore('pants')">👖 Quần &amp; Váy</button>
+                <button class="btn btn-sm btn-accent" id="fashion-tab-hat" onclick="renderFashionStore('hat')">🧢 Mũ &amp; Vương Miện</button>
+                <button class="btn btn-sm btn-purple" id="fashion-tab-acc" onclick="renderFashionStore('acc')">🕶️ Phụ Kiện</button>
+            </div>
+            <div id="fashion-items-grid" class="grid-2"></div>
+        </div>
+    </div>
+
+    <!-- 4D. HAIR SALON MODAL -->
+    <div class="modal-overlay" id="salon-modal">
+        <div class="modal-content pixel-box" style="background:linear-gradient(180deg,#FAF5FF 0%,#EDE7F6 100%); border-color:#6C3483;">
+            <div class="modal-header" style="background:linear-gradient(90deg,#8E44AD,#5B2C6F); color:#FFF; margin:-16px -16px 12px -16px; padding:12px 16px; border-radius:13px 13px 0 0; border-bottom:3px solid #2C3E50;">
+                <h2 id="salon-modal-title" style="color:#FFF;">💇 B2KS Hair Studio &amp; Nhuộm Nghệ Thuật</h2>
+                <button class="btn btn-sm" style="background:#FFF; color:#6C3483;" onclick="closeModal('salon-modal')">✖ Đóng</button>
+            </div>
+            <div style="background:#FFF; border:2px solid #9B59B6; border-radius:12px; padding:8px 12px; margin-bottom:10px; font-size:13px; display:flex; align-items:center; gap:10px;">
+                <span style="font-size:26px;">💇‍♂️</span>
+                <div><b style="color:#6C3483;">Hair Stylist Tuấn Anh:</b> &ldquo;Ngồi vào ghế gương tạo kiểu nào! Cắt tạo kiểu mới (<b>15⭐</b>) hoặc nhuộm màu thời trang (<b>10⭐</b>) ngay tại Studio!&rdquo;</div>
+            </div>
+            <div style="display:flex; gap:14px; align-items:center; background:#FFF; padding:10px; border-radius:12px; border:2.5px solid #8E44AD; margin-bottom:12px; flex-wrap:wrap;">
+                <canvas id="salon-preview-canvas" width="100" height="115" style="width:100px; height:115px; background:#F5EEF8; border-radius:10px; border:2px solid #6C3483; margin:0 auto;"></canvas>
+                <div style="flex:1; min-width:200px; font-size:13px;">
+                    <div><b>Hóa đơn dịch vụ ghế cắt:</b> <span class="points-pill" id="salon-cost-pill">0⭐</span></div>
+                    <div style="color:#555; margin-top:4px;">• Cắt &amp; Tạo kiểu tóc mới: <b>15⭐</b><br>• Nhuộm màu tóc mới: <b>10⭐</b></div>
+                    <button class="btn btn-purple" style="margin-top:8px; width:100%;" onclick="confirmSalonChange()">✂️ Thanh toán &amp; Tạo kiểu ngay</button>
+                </div>
+            </div>
+            <div class="form-group" style="background:#FFF; padding:10px; border-radius:10px; border:2px solid #D2B4DE;">
+                <label style="color:#6C3483;">1. Bảng Mẫu Kiểu Tóc (15⭐ nếu thay đổi):</label>
+                <div class="visual-grid" id="salon-hair-grid"></div>
+            </div>
+            <div class="form-group" style="background:#FFF; padding:10px; border-radius:10px; border:2px solid #D2B4DE;">
+                <label style="color:#6C3483;">2. Bảng Thuốc Nhuộm Thời Thượng (10⭐ nếu thay đổi):</label>
+                <div class="swatch-grid" id="salon-haircolor-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4F. ENGLISH CENTER GRADE 6 QUIZ MODAL -->
+    <div class="modal-overlay" id="english-center-modal">
+        <div class="modal-content pixel-box" style="max-width:650px; background:linear-gradient(180deg,#F4FBF9 0%,#E8F6F3 100%); border-color:#117864;">
+            <div class="modal-header" style="background:linear-gradient(90deg,#16A085,#0E6251); color:#FFF; margin:-16px -16px 12px -16px; padding:12px 16px; border-radius:13px 13px 0 0; border-bottom:3px solid #2C3E50;">
+                <h2 id="english-modal-title" style="color:#FFF;">🎓 B2KS English Academy (Chuẩn Lớp 6 &amp; Phát Âm)</h2>
+                <button class="btn btn-sm" style="background:#FFF; color:#0E6251;" onclick="closeModal('english-center-modal')">✖ Đóng</button>
+            </div>
+            <div style="background:#1E4620; color:#ECF0F1; border:4px solid #8D6E63; border-radius:12px; padding:12px 14px; margin-bottom:12px; font-size:13px; display:flex; align-items:center; gap:12px; box-shadow:inset 0 0 12px rgba(0,0,0,0.35);">
+                <span style="font-size:30px;">👩‍🏫</span>
+                <div>
+                    <div style="color:#F9E79F; font-weight:700; margin-bottom:2px;">CHALKBOARD • MS. MAI'S CLASSROOM</div>
+                    <div>&ldquo;Welcome to <b>B2KS English Academy</b>! Chọn chuyên đề để nhận 10 câu hỏi từ ngân hàng Firebase &amp; tự động phát âm tiếng Anh nhé!&rdquo;</div>
+                </div>
+            </div>
+            <div id="eng-topic-bar" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; background:#D1F2EB; padding:8px; border-radius:10px; border:2px solid #16A085;">
+                <button class="btn btn-primary btn-sm" onclick="startEnglishGrade6Quiz('mix')">🎲 Đề Tổng Hợp (10 câu)</button>
+                <button class="btn btn-accent btn-sm" onclick="startEnglishGrade6Quiz('grammar')">📘 Ngữ Pháp Lớp 6</button>
+                <button class="btn btn-purple btn-sm" onclick="startEnglishGrade6Quiz('vocab')">🔤 Từ Vựng &amp; Giao Tiếp</button>
+            </div>
+            <div id="eng-quiz-body"></div>
+        </div>
+    </div>
+
+    <!-- 4G. MULTIPLAYER ONLINE ARCADE ZONE MODAL -->
+    <div class="modal-overlay" id="arcade-modal">
+        <div class="modal-content pixel-box" style="max-width:720px; background:linear-gradient(180deg,#1B2631 0%,#212F3D 100%); color:#ECF0F1; border-color:#F39C12;">
+            <div class="modal-header" style="background:linear-gradient(90deg,#C0392B,#D35400); color:#FFF; margin:-16px -16px 12px -16px; padding:12px 16px; border-radius:13px 13px 0 0; border-bottom:3px solid #F1C40F;">
+                <h2 style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; color:#FFF;"><span id="arcade-modal-title">🕹️ B2KS eSports &amp; Arcade Arena</span> <span id="arcade-online-badge" class="tag" style="background:#27AE60; color:#FFF; font-size:11px;">🟢 ONLINE</span></h2>
+                <button class="btn btn-sm" style="background:#F1C40F; color:#2C3E50;" onclick="closeArcadeModal()">✖ Đóng</button>
+            </div>
+            <div id="arcade-dynamic-container" style="color:#2C3E50; background:#FDFEFE; border-radius:12px; padding:10px;"></div>
+        </div>
+    </div>
+
+    <!-- 4H. B2KS INVENTION & FUSION LAB MODAL -->
+    <div class="modal-overlay" id="invention-lab-modal">
+        <div class="modal-content pixel-box" style="max-width:700px; background:linear-gradient(180deg,#0F172A 0%,#1E293B 100%); color:#F8FAFC; border:3px solid #38BDF8;">
+            <div class="modal-header" style="background:linear-gradient(90deg,#0284C7,#0D9488); color:#FFF; margin:-16px -16px 12px -16px; padding:12px 16px; border-radius:13px 13px 0 0; border-bottom:3px solid #38BDF8;">
+                <h2 style="color:#FFF; display:flex; align-items:center; gap:8px;"><span id="lab-modal-title">🧪 Phòng Thí Nghiệm Sáng Tạo B2KS</span> <span class="tag" style="background:#0F172A; color:#38BDF8; border-color:#38BDF8;">PRO LAB v2</span></h2>
+                <button class="btn btn-sm" style="background:#FFF; color:#0F172A;" onclick="closeModal('invention-lab-modal')">✖ Đóng</button>
+            </div>
+
+            <div style="background:rgba(15,23,42,0.85); border:2px solid #0EA5E9; border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:13px; display:flex; align-items:center; gap:10px;">
+                <span style="font-size:28px;">🤖</span>
+                <div>
+                    <div style="font-weight:700; color:#38BDF8;">Giáo Sư Robot Neo (Phiên bản nâng cấp 30+ hình thái):</div>
+                    <div style="color:#E2E8F0;">&ldquo;Nhập bất kỳ ý tưởng Tiếng Anh nào (kết hợp chất liệu, sinh vật, vũ khí, nội thất, hào quang...) để tạo vật phẩm độc bản hoàn toàn khác biệt!&rdquo;</div>
+                </div>
+            </div>
+
+            <div class="room-tabs" style="margin-bottom:12px; background:#0F172A; padding:6px; border-radius:10px; border:1.5px solid #334155;">
+                <button class="btn btn-sm" id="lab-tab-prompt-btn" style="background:#0284C7;" onclick="switchInventionLabMode('prompt')">✨ Chế tạo từ Tiếng Anh (10⭐)</button>
+                <button class="btn btn-sm" id="lab-tab-fusion-btn" style="background:#475569;" onclick="switchInventionLabMode('fusion')">🧬 Hợp nhất 2 Vật Phẩm (15⭐)</button>
+            </div>
+
+            <div id="lab-fusion-panel" style="display:none; background:#0F172A; border:2px dashed #38BDF8; border-radius:12px; padding:10px; margin-bottom:12px;">
+                <div style="font-size:12.5px; font-weight:700; color:#38BDF8; margin-bottom:4px;">🔬 Chọn 2 vật phẩm nguyên liệu đang có sẵn trong túi đồ để lai ghép:</div>
+                <div style="font-size:11.5px; color:#FBBF24; background:rgba(245, 158, 11, 0.14); border:1px solid rgba(251, 191, 36, 0.45); border-radius:8px; padding:6px 8px; margin-bottom:8px;">
+                    ⚠️ <b>Lưu ý:</b> Sau khi hợp nhất thành công, <b>2 vật phẩm nguyên liệu này sẽ mất đi</b> để tạo thành vật phẩm mới!
+                </div>
+                <div id="lab-fusion-empty-msg" style="display:none; font-size:12px; color:#FCA5A5; background:rgba(239, 68, 68, 0.14); border:1px solid rgba(248, 113, 113, 0.45); border-radius:8px; padding:8px; margin-bottom:4px;">
+                    🎒 Bạn cần có ít nhất <b>2 vật phẩm khả dụng trong túi đồ</b> để thực hiện hợp nhất!
+                </div>
+                <div id="lab-fusion-selectors" style="display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center;">
+                    <div>
+                        <label style="font-size:11.5px; color:#94A3B8; display:block; margin-bottom:4px;">Nguyên liệu A (Dáng chính):</label>
+                        <select id="lab-item-a" onchange="syncLabFusionDropdowns('a')" style="width:100%; padding:7px; border-radius:8px; border:2px solid #0284C7; background:#1E293B; color:#FFF; font-weight:600;"></select>
+                    </div>
+                    <div style="font-size:22px; font-weight:700; color:#38BDF8; padding-top:16px;">➕</div>
+                    <div>
+                        <label style="font-size:11.5px; color:#94A3B8; display:block; margin-bottom:4px;">Nguyên liệu B (Đặc tính lai):</label>
+                        <select id="lab-item-b" onchange="syncLabFusionDropdowns('b')" style="width:100%; padding:7px; border-radius:8px; border:2px solid #0D9488; background:#1E293B; color:#FFF; font-weight:600;"></select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="lab-prompt-panel" style="background:#0F172A; border:2px solid #334155; border-radius:12px; padding:12px; margin-bottom:12px;">
+                <label style="display:block; font-size:13px; font-weight:700; color:#7DD3FC; margin-bottom:6px;">
+                    ✍️ Nhập dòng lệnh mô tả bằng Tiếng Anh (hỗ trợ ô tô có cánh, tàu hỏa, tên lửa, rồng, robot, kích thước...):
+                </label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <input type="text" id="lab-english-prompt" placeholder="Ví dụ: a golden car with two rainbow wings..." style="flex:1; min-width:210px; padding:9px 12px; border-radius:9px; border:2px solid #38BDF8; background:#1E293B; color:#FFF; font-size:13.5px;" onkeypress="if(event.key==='Enter') runInventionLabSynthesis()">
+                    <select id="lab-size-select" title="Chọn kích thước vật phẩm trong phòng" style="padding:8px 10px; border-radius:9px; border:2px solid #38BDF8; background:#1E293B; color:#FFF; font-weight:700; font-size:12.5px;">
+                        <option value="auto">📏 Cỡ: Tự động</option>
+                        <option value="small">🔹 Nhỏ (Small)</option>
+                        <option value="medium">🔸 Vừa (Medium)</option>
+                        <option value="large">🔶 Lớn (Large)</option>
+                        <option value="giant">💥 Khổng Lồ (Giant)</option>
+                    </select>
+                    <button class="btn" style="background:linear-gradient(90deg,#0284C7,#10B981); padding:9px 16px;" onclick="runInventionLabSynthesis()" id="lab-synthesize-btn">⚡ Chế tạo (10⭐)</button>
+                </div>
+                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <span style="font-size:11.5px; color:#94A3B8;">💡 Thử nhiều mẫu:</span>
+                    <button type="button" class="btn btn-sm" style="background:#0F766E; font-size:11px; padding:3px 8px;" onclick="pickRandomLabIdea()">🎲 Ý tưởng ngẫu nhiên</button>
+                    <button type="button" class="btn btn-sm" style="background:#334155; font-size:11px; padding:3px 7px;" onclick="fillLabSamplePrompt('a golden sports car with two rainbow wings')">🚗 Car With 2 Wings</button>
+                    <button type="button" class="btn btn-sm" style="background:#334155; font-size:11px; padding:3px 7px;" onclick="fillLabSamplePrompt('a giant cyber robot dinosaur with dragon wings')">🦖 Giant Winged Dino</button>
+                    <button type="button" class="btn btn-sm" style="background:#334155; font-size:11px; padding:3px 7px;" onclick="fillLabSamplePrompt('a large crystal volcano guitar with fire stars')">🎸 Large Volcano Guitar</button>
+                </div>
+            </div>
+
+            <div id="lab-fusion-action-bar" style="display:none; margin-bottom:12px; text-align:center;">
+                <button class="btn" style="width:100%; padding:11px 18px; font-size:14.5px; background:linear-gradient(90deg,#0D9488,#0284C7,#6366F1); border:2px solid #7DD3FC; box-shadow:0 4px 14px rgba(14,165,233,0.4);" onclick="runInventionLabSynthesis()" id="lab-fusion-submit-btn">🧬 Hợp nhất 2 Vật Phẩm Ngay (15⭐)</button>
+            </div>
+
+            <div id="lab-result-area"></div>
+        </div>
+    </div>
+
+    <!-- 4E. PRIVATE ROOM FLOATING TOOLBAR & DECOR PICKER -->
+    <div id="private-room-toolbar" class="pixel-box" style="display:none; position:fixed; top:92px; left:50%; transform:translateX(-50%); z-index:92; padding:6px 10px; gap:8px; align-items:center; flex-wrap:wrap; max-width:95vw; background:rgba(255,255,255,0.95);">
+        <span id="pr-room-badge" style="font-weight:700; font-size:12.5px; color:#2C3E50;">🛏️ Phòng Riêng</span>
+        <label id="pr-privacy-label" style="display:flex; align-items:center; gap:5px; font-weight:700; font-size:12px; cursor:pointer; background:#EEF2F7; padding:3px 8px; border-radius:8px;">
+            <input type="checkbox" id="pr-privacy-check" onchange="togglePrivateRoomLockFromToolbar()" style="width:15px; height:15px;">
+            🔓 Mở cửa
+        </label>
+        <select id="pr-wall-select" onchange="changePrivateRoomWallFromToolbar()" style="padding:3px 6px; border:2px solid #2C3E50; border-radius:6px; font-weight:600; font-size:11.5px;">
+            <option value="#FADBD8">Tường Hồng phấn</option>
+            <option value="#D6EAF8">Tường Xanh trời</option>
+            <option value="#FCF3CF">Tường Vàng kem</option>
+            <option value="#EBDEF0">Tường Tím nhạt</option>
+            <option value="#D5F5E3">Tường Xanh bạc hà</option>
+        </select>
+        <button class="btn btn-primary btn-sm" style="padding:4px 9px; font-size:11.5px;" onclick="exitPrivateRoomToHallway()">🚪 Ra hành lang</button>
+    </div>
+
+    <div class="modal-overlay" id="slot-picker-modal">
+        <div class="modal-content pixel-box" style="max-width:440px;">
+            <div class="modal-header">
+                <h2 id="slot-picker-title">📌 Trang Trí Vị Trí</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('slot-picker-modal')">Đóng</button>
+            </div>
+            <div style="font-size:13px; margin-bottom:10px;" id="pr-slot-instruction">
+                Chọn vật phẩm trang trí từ túi đồ để đặt vào vị trí này:
+            </div>
+            <div id="pr-slot-items-bar" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+        </div>
+    </div>
+
+    <!-- 4F. LIVING ROOM YOUTUBE TV MODAL -->
+    <div class="modal-overlay" id="tv-modal">
+        <div class="modal-content pixel-box" style="max-width:620px;">
+            <div class="modal-header">
+                <h2>📺 Tivi Thông Minh Phòng Khách (YouTube Kids &amp; Family)</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeTvModal()">Tắt Tivi</button>
+            </div>
+            <div id="tv-status-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:#EBF5FB; border:2px solid #2980B9; border-radius:10px; padding:8px 12px; margin-bottom:10px; font-size:13px;">
+                <div id="tv-time-remaining">⏳ Thời gian còn lại hôm nay: <b>30:00</b></div>
+                <div id="tv-card-action"></div>
+            </div>
+            <div class="room-tabs" style="margin-bottom:10px;">
+                <button class="btn btn-sm btn-danger" onclick="switchTvChannel('XqZsoesa55w', '🎵 Baby Shark & Nhạc Thiếu Nhi')">🎵 Nhạc Vui Nhộn</button>
+                <button class="btn btn-sm btn-accent" onclick="switchTvChannel('tVlcKp3bWH8', '🇬🇧 Hello Song - English Kids')">🇬🇧 English Songs</button>
+                <button class="btn btn-sm btn-purple" onclick="switchTvChannel('aqz-KE-bpKQ', '🎬 Phim Hoạt Hình 3D')">🎬 Hoạt Hình 3D</button>
+                <a id="tv-external-yt-link" href="https://www.youtube.com/watch?v=XqZsoesa55w" target="_blank" rel="noopener" class="btn btn-sm" style="background:#2C3E50; text-decoration:none;">↗ Mở trên YouTube</a>
+            </div>
+            <div id="tv-screen-container" style="position:relative; width:100%; aspect-ratio:16/9; background:#111; border:3px solid #2C3E50; border-radius:12px; overflow:hidden;">
+                <iframe id="youtube-iframe" width="100%" height="100%" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div id="tv-local-hint" style="display:none; background:#FEF9E7; border:1.5px solid #F39C12; border-radius:8px; padding:6px 10px; margin-top:8px; font-size:12px; color:#7E5109;">
+                💡 Nếu mở file trực tiếp trên điện thoại mà khung video báo lỗi, hãy bấm nút <b>↗ Mở trên YouTube</b> ở trên hoặc mở game qua link <b>GitHub Pages</b>!
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. VISUAL CUSTOMIZE CHARACTER, ROOM & HOUSE MODAL -->
+    <div class="modal-overlay" id="custom-modal">
+        <div class="modal-content pixel-box">
+            <div class="modal-header">
+                <h2>🎨 Tùy Chỉnh Nhân Vật, Nhà &amp; Phòng</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('custom-modal')">Đóng</button>
+            </div>
+
+            <div class="room-tabs" style="margin-bottom:14px;">
+                <button class="btn btn-sm btn-accent" onclick="switchCustomTab('char')">🧑 Nhân vật &amp; Quần áo</button>
+                <button class="btn btn-sm btn-purple" onclick="switchCustomTab('room')">🛏️ Phòng riêng</button>
+                <button class="btn btn-sm btn-primary" onclick="switchCustomTab('house')">🏢 Nhà phố gia đình</button>
+            </div>
+
+            <div id="custom-tab-char">
+                <div id="wardrobe-locked-banner" style="display:none; background:#FDEDEC; border:2.5px solid #E74C3C; border-radius:10px; padding:12px; margin-bottom:12px; color:#922B21; font-size:13px; line-height:1.5;">
+                    <div style="font-weight:700; font-size:14px; margin-bottom:4px;">🔒 Tủ quần áo chưa được mở!</div>
+                    Hãy tự điều khiển nhân vật đi vào <b>Nhà phố ➔ Hành lang cầu thang ➔ Phòng riêng của mình</b> và bấm <b>🧥 Mở tủ quần áo</b> để thay đổi trang phục nhé!
+                </div>
+                <div id="wardrobe-controls-wrapper">
+                <div style="display:flex; gap:14px; align-items:center; background:#EBF5FB; padding:12px; border-radius:12px; border:2.5px solid #2C3E50; margin-bottom:14px; flex-wrap:wrap;">
+                    <div style="text-align:center; margin:0 auto;">
+                        <canvas id="char-preview-canvas" width="110" height="125" style="width:110px; height:125px; background:#FFF; border-radius:12px; border:2.5px solid #2C3E50;"></canvas>
+                        <div style="font-size:11px; font-weight:700; color:#2C3E50; margin-top:3px;">Xem trước</div>
+                    </div>
+                    <div style="flex:1; min-width:200px;">
+                        <div class="form-group">
+                            <label>Tên hiển thị:</label>
+                            <input type="text" id="custom-char-name" oninput="drawCharPreview()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Mũ &amp; Phụ kiện trong tủ đồ:</label>
+                            <div id="visual-outfit-grid" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:#F5EEF8; border:1.5px solid #9B59B6; border-radius:8px; padding:7px 10px; margin-bottom:10px; font-size:12px; color:#5B2C6F;">
+                    💇 <i>Muốn đổi kiểu tóc hoặc nhuộm màu tóc? Hãy ghé <b>Salon Tóc</b> trên khu phố nhé!</i>
+                </div>
+
+                <div class="form-group">
+                    <label>1. Chọn Set Trang Phục đã mua trong Tủ đồ:</label>
+                    <div class="visual-grid" id="visual-fashion-set-grid"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>2. Phối Áo (Cơ bản &amp; Áo đã mua ở Boutique):</label>
+                    <div class="visual-grid" id="visual-shirt-grid"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>3. Phối Quần / Váy (Cơ bản &amp; Đồ đã mua ở Boutique):</label>
+                    <div class="visual-grid" id="visual-pants-grid"></div>
+                </div>
+
+                <button class="btn btn-primary" style="width:100%; justify-content:center; padding:10px; font-size:14px;" onclick="saveCharCustom()">💾 Lưu ngoại hình &amp; trang phục</button>
+                </div>
+            </div>
+
+            <div id="custom-tab-room" style="display:none;">
+                <div style="background:#EEF2F7; padding:10px; border-radius:8px; margin-bottom:12px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
+                        <input type="checkbox" id="room-privacy-toggle" onchange="toggleRoomPrivacy()" style="width:18px; height:18px;">
+                        🔓 Mở cửa phòng riêng (Cho phép thành viên khác bước vào)
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Màu tường phòng riêng:</label>
+                    <select id="room-wall-color" onchange="changeRoomWall()">
+                        <option value="#FADBD8">Hồng phấn ấm áp</option>
+                        <option value="#D6EAF8">Xanh bầu trời</option>
+                        <option value="#FCF3CF">Vàng kem tươi sáng</option>
+                        <option value="#EBDEF0">Tím Lavender</option>
+                        <option value="#D5F5E3">Xanh bạc hà</option>
+                    </select>
+                </div>
+                <p style="font-size:13px;"><b>🛋️ Đặt nội thất vào phòng riêng:</b> Bấm đặt vật phẩm tại vị trí nhân vật của bạn đang đứng trong phòng riêng:</p>
+                <div id="room-decor-inventory" class="grid-2"></div>
+            </div>
+
+            <div id="custom-tab-house" style="display:none;">
+                <div id="house-builder-locked" style="color:red; font-weight:600; display:none;">
+                    ⚠️ Chỉ có Bố hoặc Mẹ mới có quyền chọn vị trí xây nhà và kiểu dáng ngôi nhà!
+                </div>
+                <div id="house-builder-controls">
+                    <div class="form-group">
+                        <label>Vị trí lô đất trên đường phố:</label>
+                        <select id="house-plot-select">
+                            <option value="0">Lô số 1 (Khu Tây - Cạnh Công viên)</option>
+                            <option value="1">Lô số 2 (Trung tâm Khu phố)</option>
+                            <option value="2">Lô số 3 (Khu Đông - Cạnh Cửa hàng)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Kiểu dáng Nhà Phố Gia Đình:</label>
+                        <select id="house-style-select">
+                            <option value="modern">🏢 Nhà Phố Hiện Đại (Tường kem, ban công kính)</option>
+                            <option value="classic">🏛️ Nhà Phố Tân Cổ Điển (Mái ngói đỏ, cột trắng)</option>
+                            <option value="pastel">🏡 Nhà Phố Pastel Xanh Mint Dễ Thương</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="updateHouseDesign()">🏗️ Cập nhật Nhà Phố Gia Đình</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. DONATE POINTS MODAL -->
+    <div class="modal-overlay" id="donate-modal">
+        <div class="modal-content pixel-box" style="max-width:420px;">
+            <div class="modal-header">
+                <h2>🎁 Tặng Điểm Cho Thành Viên</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('donate-modal')">Đóng</button>
+            </div>
+            <div class="form-group">
+                <label>Chọn người nhận:</label>
+                <select id="donate-recipient"></select>
+            </div>
+            <div class="form-group">
+                <label>Số điểm muốn tặng (Bạn có: <span id="donate-avail">0</span>⭐):</label>
+                <input type="number" id="donate-amount" value="10" min="1">
+            </div>
+            <div class="form-group">
+                <label>Lời nhắn:</label>
+                <input type="text" id="donate-note" placeholder="VD: Thưởng con chăm ngoan!">
+            </div>
+            <button class="btn btn-accent" style="width:100%; justify-content:center;" onclick="sendDonation()">💸 Chuyển điểm ngay</button>
+        </div>
+    </div>
+
+    <!-- 7. HOMEWORK SUBMISSION & GRADING MODAL -->
+    <div class="modal-overlay" id="hw-action-modal">
+        <div class="modal-content pixel-box" style="max-width:500px;">
+            <div class="modal-header">
+                <h2 id="hw-modal-title">📚 Chi tiết Bài tập</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('hw-action-modal')">Đóng</button>
+            </div>
+            <div id="hw-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- 8. PASSCODE GATE MODAL -->
+    <div class="modal-overlay" id="pin-modal" style="z-index:260;">
+        <div class="modal-content pixel-box" style="max-width:340px; text-align:center;">
+            <div class="modal-header">
+                <h2>🔐 Passcode Phụ Huynh</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('pin-modal')">Hủy</button>
+            </div>
+            <p style="font-size:12.5px; color:#555; margin-top:0;">Vui lòng nhập mã PIN 4 số của Bố/Mẹ để tiếp tục:</p>
+            <div id="pin-display-box" style="font-size:26px; font-weight:700; letter-spacing:10px; background:#EBF5FB; border:2.5px solid #2C3E50; border-radius:10px; padding:8px; margin:10px 0;">____</div>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; max-width:240px; margin:0 auto;">
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('1')">1</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('2')">2</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('3')">3</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('4')">4</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('5')">5</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('6')">6</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('7')">7</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('8')">8</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('9')">9</button>
+                <button type="button" class="btn btn-danger" style="font-size:16px; padding:10px;" onclick="clearPinDigit()">⌫</button>
+                <button type="button" class="btn btn-accent" style="font-size:18px; padding:10px;" onclick="pressPinDigit('0')">0</button>
+                <button type="button" class="btn btn-primary" style="font-size:15px; padding:10px;" onclick="verifyPin()">OK</button>
+            </div>
+            <div id="pin-reset-container" style="margin-top:12px; display:none;">
+                <button type="button" style="background:none; border:none; color:#7F8C8D; text-decoration:underline; font-size:11.5px; cursor:pointer;" onclick="resetPinToDefault()">Quên PIN? Khôi phục mặc định</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. FAMILY SYNC & DEVICE LOCK MODAL -->
+    <div class="modal-overlay" id="family-sync-modal">
+        <div class="modal-content pixel-box" style="max-width:540px;">
+            <div class="modal-header">
+                <h2>🔗 Kết Nối 4 Máy &amp; Khóa PIN Thiết Bị</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('family-sync-modal')">Đóng</button>
+            </div>
+
+            <div style="background:#FDEDEC; border:2px solid #E74C3C; border-radius:10px; padding:10px; margin-bottom:12px;">
+                <div style="font-weight:700; font-size:14px; color:#922B21; margin-bottom:4px;">🔒 Khóa cố định thiết bị này cho nhân vật hiện tại</div>
+                <div style="font-size:12px; color:#78281F; margin-bottom:8px;">
+                    Đang điều khiển: <b id="sync-cur-member-label">Bố</b>. Khi bật khóa máy (dùng cho điện thoại của <b>Kem</b> và <b>Sóc</b>), máy sẽ luôn giữ nhân vật đó và yêu cầu mã PIN nếu bấm Đổi người hoặc mở Bảng Phụ Huynh.
+                </div>
+                <button type="button" id="btn-toggle-device-lock" class="btn btn-danger" style="width:100%;" onclick="toggleDeviceLock()">
+                    🔒 Bật Khóa Máy Cho Nhân Vật Này
+                </button>
+            </div>
+
+            <div style="background:#FEF9E7; border:2px solid #F39C12; border-radius:10px; padding:10px; margin-bottom:12px;">
+                <div style="font-weight:700; font-size:13.5px; margin-bottom:6px;">🔑 Đổi mã PIN Phụ huynh <span id="current-pin-label" style="color:#D35400;"></span></div>
+                <div style="display:flex; gap:6px;">
+                    <input type="password" inputmode="numeric" pattern="[0-9]*" id="new-pin-input" maxlength="4" placeholder="Nhập 4 chữ số PIN mới..." style="flex:1; padding:6px; border:2px solid #2C3E50; border-radius:6px;">
+                    <button type="button" class="btn btn-primary" onclick="changeParentPin()">Lưu PIN</button>
+                </div>
+            </div>
+
+            <div style="background:#EBF5FB; border:2px solid #2980B9; border-radius:10px; padding:10px; margin-bottom:12px;">
+                <div style="font-weight:700; font-size:13.5px; color:#1B4F72; margin-bottom:4px;">☁️ Đồng bộ tự động 4 máy qua Firebase (Map chung thời gian thực)</div>
+                <div style="font-size:12px; color:#21618C; margin-bottom:6px;">
+                    Nhập chung 1 link <b>Firebase Realtime Database</b> trên cả 4 điện thoại để Bố, Mẹ, Kem, Sóc thấy nhau đi lại ngoài khu phố &amp; trong nhà, đồng bộ điểm sao và nhiệm vụ tự động:
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="firebase-url-input" placeholder="https://b2ks-home-default-rtdb.firebaseio.com" style="flex:1; padding:6px; border:2px solid #2C3E50; border-radius:6px;">
+                    <button type="button" class="btn btn-accent" onclick="saveFirebaseUrl()">Kết nối</button>
+                </div>
+                <div id="firebase-status-text" style="font-size:11.5px; color:#555; margin-top:6px;">Trạng thái: Đang lưu cục bộ trên máy này</div>
+            </div>
+
+            <div style="background:#EAFAF1; border:2px solid #27AE60; border-radius:10px; padding:10px;">
+                <div style="font-weight:700; font-size:13.5px; color:#145A32; margin-bottom:6px;">📋 Hoặc chia sẻ nhanh dữ liệu qua Mã Gia Đình</div>
+                <button type="button" class="btn" style="background:#27AE60; width:100%; margin-bottom:6px;" onclick="exportFamilyCode()">📤 Copy Mã Dữ Liệu Gia Đình</button>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="import-code-input" placeholder="Dán mã dữ liệu từ máy kia..." style="flex:1; padding:6px; border:2px solid #2C3E50; border-radius:6px;">
+                    <button type="button" class="btn btn-primary" onclick="importFamilyCode()">Nạp</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10. CHARACTER SMARTPHONE MODAL -->
+    <div class="modal-overlay" id="smartphone-modal" style="z-index:220;">
+        <div class="phone-frame">
+            <div class="phone-notch"><span></span></div>
+            <div class="phone-screen">
+                <div class="phone-status-bar">
+                    <span id="phone-status-time">☀️ 13:00</span>
+                    <span id="phone-carrier-label">📶 B2KS-5G 🔋100%</span>
+                </div>
+                <div id="phone-screen-body" style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column;"></div>
+                <div class="phone-home-bar" style="background:rgba(255,255,255,0.85); border-top:1px solid #D5D8DC; gap:14px; align-items:center;">
+                    <button type="button" class="btn btn-sm" style="background:#34495E; padding:3px 10px; font-size:11px;" onclick="switchSmartphoneView('home')">🏠 Màn hình chính</button>
+                    <button type="button" class="btn btn-sm btn-danger" style="padding:3px 10px; font-size:11px;" onclick="closeModal('smartphone-modal')">✖ Đóng máy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 11. DINING ROOM ENGLISH FOOD PUZZLE MODAL -->
+    <div class="modal-overlay" id="dining-puzzle-modal" style="z-index:215;">
+        <div class="modal-content pixel-box" style="max-width:460px; text-align:center;">
+            <div class="modal-header">
+                <h2>🍽️ Bữa Ăn &amp; Đố Vui Tiếng Anh</h2>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('dining-puzzle-modal')">Đóng</button>
+            </div>
+            <div id="dining-puzzle-body"></div>
+        </div>
+    </div>
+
+    <!-- 12. FREE B2KS SOCCER STADIUM MINI-GAME MODAL (1P + 2P ONLINE + SPECTATOR) -->
+    <div class="modal-overlay" id="soccer-modal" style="z-index:225;">
+        <div class="modal-content pixel-box" style="max-width:610px; background:linear-gradient(180deg,#ECFDF5 0%,#D1FAE5 100%); border-color:#065F46;">
+            <div class="modal-header" style="background:linear-gradient(90deg,#15803D,#047857); color:#FFF; margin:-16px -16px 10px -16px; padding:11px 16px; border-radius:13px 13px 0 0; border-bottom:3px solid #2C3E50;">
+                <h2 id="soccer-modal-title" style="color:#FFF;">⚽ Sân Bóng Đá B2KS (Miễn Phí 0⭐)</h2>
+                <button class="btn btn-sm" style="background:#FFF; color:#065F46;" onclick="closeSoccerModal()">✖ Đóng</button>
+            </div>
+
+            <div class="room-tabs" style="margin-bottom:8px; background:#A7F3D0; padding:6px; border-radius:10px; border:2px solid #059669;">
+                <button type="button" id="soccer-mode-1p-btn" class="btn btn-sm" style="background:#15803D;" onclick="switchSoccerToSolo()">🤖 Đấu 1 Người (vs AI)</button>
+                <button type="button" id="soccer-mode-2p-btn" class="btn btn-sm" style="background:#64748B;" onclick="switchSoccerTo2P()">👥 Đấu 2 Người Online</button>
+                <button type="button" id="soccer-mode-spec-btn" class="btn btn-sm" style="background:#DC2626; display:none;" onclick="spectateSoccerMatch()">📺 Xem Trực Tiếp</button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; background:#FFF; border:2.5px solid #065F46; border-radius:12px; padding:8px 12px; margin-bottom:8px;">
+                <div id="soccer-scoreboard" style="font-size:14px; font-weight:700;">⚽ 0 — 0</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span id="soccer-timer" class="points-pill" style="font-size:13px; padding:3px 9px;">⏱️ 45s</span>
+                    <button type="button" id="soccer-restart-btn" class="btn btn-sm btn-accent" onclick="restartSoccerMatch()">🔄 Đá lại</button>
+                </div>
+            </div>
+
+            <div id="soccer-status-text" style="font-size:12px; font-weight:600; text-align:center; margin-bottom:8px; color:#1E293B;">
+                🆓 Đá Solo 0⭐ • Rê bóng vượt hậu vệ &amp; bấm ⚡ Sút vào lưới!
+            </div>
+
+            <div id="soccer-2p-lobby" style="display:none; background:#FFF; border:2.5px solid #0284C7; border-radius:12px; padding:10px; margin-bottom:10px;"></div>
+
+            <div id="soccer-pitch-wrap" style="display:flex; justify-content:center; margin-bottom:10px;">
+                <canvas id="soccer-canvas" width="520" height="360" style="width:100%; max-width:520px; height:auto; aspect-ratio:520/360; border:3px solid #064E3B; border-radius:12px; background:#1E8449; touch-action:none; cursor:crosshair;" onclick="soccerCanvasKick(event)"></canvas>
+            </div>
+
+            <div id="soccer-controls-wrap" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; background:#FFF; border:2px solid #10B981; border-radius:12px; padding:8px 12px;">
+                <div style="display:grid; grid-template-columns:repeat(3, 38px); grid-template-rows:repeat(2, 34px); gap:4px; align-items:center; justify-items:center;">
+                    <span></span>
+                    <button type="button" class="btn btn-sm btn-accent" style="width:38px; height:34px; padding:0;" onmousedown="soccerTouchDir('up', true)" onmouseup="soccerTouchDir('up', false)" onmouseleave="soccerTouchDir('up', false)" ontouchstart="event.preventDefault(); soccerTouchDir('up', true)" ontouchend="soccerTouchDir('up', false)">▲</button>
+                    <span></span>
+                    <button type="button" class="btn btn-sm btn-accent" style="width:38px; height:34px; padding:0;" onmousedown="soccerTouchDir('left', true)" onmouseup="soccerTouchDir('left', false)" onmouseleave="soccerTouchDir('left', false)" ontouchstart="event.preventDefault(); soccerTouchDir('left', true)" ontouchend="soccerTouchDir('left', false)">◀</button>
+                    <button type="button" class="btn btn-sm btn-accent" style="width:38px; height:34px; padding:0;" onmousedown="soccerTouchDir('down', true)" onmouseup="soccerTouchDir('down', false)" onmouseleave="soccerTouchDir('down', false)" ontouchstart="event.preventDefault(); soccerTouchDir('down', true)" ontouchend="soccerTouchDir('down', false)">▼</button>
+                    <button type="button" class="btn btn-sm btn-accent" style="width:38px; height:34px; padding:0;" onmousedown="soccerTouchDir('right', true)" onmouseup="soccerTouchDir('right', false)" onmouseleave="soccerTouchDir('right', false)" ontouchstart="event.preventDefault(); soccerTouchDir('right', true)" ontouchend="soccerTouchDir('right', false)">▶</button>
+                </div>
+                <div style="font-size:11.5px; color:#475569; flex:1; min-width:140px; text-align:center;">
+                    Dùng phím <b>Mũi tên / WASD</b> + <b>Space</b> (hoặc chạm lên sân để sút về hướng đó!)
+                </div>
+                <button type="button" class="btn btn-primary" style="padding:12px 18px; font-size:15px;" onclick="soccerKick()">⚡ SÚT BÓNG!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 13. PET SHOP & COMPANION PET CARE MODAL -->
+    <div class="modal-overlay" id="pet-shop-modal" style="z-index:226;">
+        <div class="modal-content pixel-box" style="max-width:680px; background:linear-gradient(180deg,#FFFBEB 0%,#FEF3C7 100%); border-color:#B45309;">
+            <div class="modal-header" style="background:linear-gradient(90deg,#F59E0B,#EC4899); color:#FFF; margin:-16px -16px 12px -16px; padding:12px 16px; border-radius:13px 13px 0 0; border-bottom:3px solid #2C3E50;">
+                <h2 id="pet-modal-title" style="color:#FFF;">🐾 Cửa Hàng &amp; Chăm Sóc Thú Cưng B2KS</h2>
+                <button class="btn btn-sm" style="background:#FFF; color:#B45309;" onclick="closeModal('pet-shop-modal')">✖ Đóng</button>
+            </div>
+            <div id="pet-shop-npc-banner" style="background:#FFF; border:2px solid #F59E0B; border-radius:12px; padding:9px 12px; margin-bottom:10px; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:9px; flex:1; min-width:210px;">
+                    <span style="font-size:26px;">👩‍🔬</span>
+                    <div>
+                        <b style="color:#B45309;">Cô My (Pet Master):</b>
+                        <span>Đổi sao nhận Trứng Thú Cưng (10 loài), ấp nở &amp; cho ăn để thú cưng tiến hóa đồng hành, tăng <b>Tốc độ</b> &amp; <b>+Sao thưởng</b>!</span>
+                    </div>
+                </div>
+                <span class="points-pill" id="pet-shop-points-pill" style="font-size:13px;">0⭐</span>
+            </div>
+            <div id="pet-hud-guide-banner" style="display:none; background:#E0F2FE; border:2px solid #0284C7; border-radius:12px; padding:9px 12px; margin-bottom:10px; font-size:12.5px; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:210px; color:#0C4A6E;">
+                    <b>🐾 Quản lý Thú Cưng Đang Sở Hữu:</b> Xem trạng thái ấp trứng, cho ăn bằng thức ăn đang có hoặc chọn thú cưng đi cùng! Muốn mua thêm trứng mới hoặc thức ăn, hãy ghé <b>🐾 Cửa Hàng Thú Cưng B2KS</b> trên bản đồ.
+                </div>
+                <button type="button" class="btn btn-sm btn-accent" onclick="navigateToPetShopFromHud()">🧭 Chỉ đường tới Cửa Hàng</button>
+            </div>
+            <div id="pet-shop-tabs" class="room-tabs" style="margin-bottom:12px; background:#FDE68A; padding:6px; border-radius:10px; border:2px solid #D97706;">
+                <button type="button" class="btn btn-sm" id="pet-tab-eggs" style="background:#D97706;" onclick="switchPetShopTab('eggs')">🥚 Nhận Trứng Thú Cưng</button>
+                <button type="button" class="btn btn-sm" id="pet-tab-food" style="background:#64748B;" onclick="switchPetShopTab('food')">🍖 Mua Thức Ăn</button>
+                <button type="button" class="btn btn-sm" id="pet-tab-accessories" style="background:#64748B;" onclick="switchPetShopTab('accessories')">🎀 Phụ Kiện</button>
+                <button type="button" class="btn btn-sm" id="pet-tab-my_pets" style="background:#64748B;" onclick="switchPetShopTab('my_pets')">🐾 Bộ Sưu Tập &amp; Chăm Nuôi</button>
+            </div>
+            <div id="pet-shop-body"></div>
+        </div>
+    </div>
+
+    <!-- REACT OVERLAY ROOT FOR CROSS-WORLD, FLEA MARKET, VIRTUAL ZOO, PARENTAL DASHBOARD & PWA -->
+    <div id="root"></div>
+
+    <script>
+      (function () {
+        if (typeof window.closeModal !== 'function') {
+          window.closeModal = function (id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          };
+        }
+        if (typeof window.startAudioOnce !== 'function') {
+          window.startAudioOnce = function () {};
+        }
+        setTimeout(function () {
+          if (window.__B2KS_BOOTED__) return;
+          fetch('./docs/index.html', { method: 'HEAD' })
+            .then(function (res) {
+              if (res && res.ok) {
+                window.location.replace('./docs/' + window.location.search + window.location.hash);
+              } else {
+                throw new Error('No docs fallback');
+              }
+            })
+            .catch(function () {
+              var guide = document.querySelector('#guide-modal .modal-content');
+              if (guide && !document.getElementById('gh-pages-warning')) {
+                var warn = document.createElement('div');
+                warn.id = 'gh-pages-warning';
+                warn.style.cssText = 'margin-top:10px;padding:10px 12px;border-radius:10px;background:#FEF3C7;border:2px solid #D97706;color:#78350F;font-size:13px;line-height:1.45;';
+                warn.innerHTML = '<b>⚠️ Lưu ý triển khai GitHub Pages:</b> Bạn đang mở mã nguồn Vite chưa build trực tiếp từ nhánh <code>main / root</code>. Hãy vào <b>Settings → Pages → Build and deployment → Source</b> và chọn <b>GitHub Actions</b> (hoặc chọn thư mục <code>/docs</code>) để game khởi chạy đầy đủ!';
+                guide.appendChild(warn);
+              }
+            });
+        }, 1200);
+      })();
+    </script>
+</body>
+</html>

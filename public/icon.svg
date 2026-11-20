@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2C3E50"/>
+      <stop offset="100%" stop-color="#1A5276"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF6B6B"/>
+      <stop offset="100%" stop-color="#E74C3C"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="196" fill="#4ECDC4" opacity="0.22"/>
+  <!-- Cute House -->
+  <polygon points="256,92 104,224 408,224" fill="url(#roof)" stroke="#FFE66D" stroke-width="14" stroke-linejoin="round"/>
+  <rect x="138" y="224" width="236" height="176" rx="18" fill="#FFF8E7" stroke="#FFE66D" stroke-width="12"/>
+  <!-- Door -->
+  <rect x="218" y="294" width="76" height="106" rx="12" fill="#8E44AD" stroke="#2C3E50" stroke-width="8"/>
+  <circle cx="278" cy="350" r="7" fill="#FFE66D"/>
+  <!-- Windows -->
+  <rect x="158" y="252" width="44" height="44" rx="8" fill="#5DADE2" stroke="#2C3E50" stroke-width="6"/>
+  <rect x="310" y="252" width="44" height="44" rx="8" fill="#5DADE2" stroke="#2C3E50" stroke-width="6"/>
+  <!-- Star Emblem -->
+  <polygon points="256,128 268,154 296,158 275,177 280,205 256,191 232,205 237,177 216,158 244,154" fill="#FFE66D" stroke="#2C3E50" stroke-width="6" stroke-linejoin="round"/>
+  <text x="256" y="458" font-family="Arial, sans-serif" font-weight="900" font-size="48" fill="#FFE66D" text-anchor="middle">B2KS</text>
+</svg>
