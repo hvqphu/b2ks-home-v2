@@ -10,6 +10,7 @@ import {
   PetAccessoryDef,
   PetVariantDef
 } from '../types/b2ks';
+import { GLOBAL_SUCCESS_ENGLISH_BANK } from './englishCurriculum';
 
 export const MAX_PARENT_POINTS = 500;
 export const DAILY_PARENT_ALLOWANCE = 150;
@@ -211,32 +212,7 @@ export const DEFAULT_ACTIVITY_CONFIGS: Record<ActivityConfigId, ActivityConfigIt
   }
 };
 
-export const DEFAULT_ENGLISH_BANK: EnglishQuestion[] = [
-  { id: 'eq_1', cat: 'grammar', q: 'She ______ to school by bicycle every morning.', opts: ['go', 'goes', 'going', 'is go'], ans: 1, exp: 'Thì hiện tại đơn với chủ ngữ ngôi thứ 3 số ít "She" -> động từ thêm -es (goes).' },
-  { id: 'eq_2', cat: 'grammar', q: 'Look! The children ______ football in the schoolyard.', opts: ['play', 'plays', 'are playing', 'is playing'], ans: 2, exp: 'Có dấu hiệu "Look!" -> Thì hiện tại tiếp diễn: are + V-ing.' },
-  { id: 'eq_3', cat: 'grammar', q: 'There ______ two bookshelves and a bed in my bedroom.', opts: ['is', 'are', 'am', 'be'], ans: 1, exp: 'Danh từ đứng ngay sau là số nhiều "two bookshelves" -> dùng "There are".' },
-  { id: 'eq_4', cat: 'grammar', q: 'My sister ______ tall and she has long black hair.', opts: ['is', 'has', 'are', 'have'], ans: 0, exp: 'Miêu tả chiều cao dùng động từ to be: "She is tall".' },
-  { id: 'eq_5', cat: 'grammar', q: 'How ______ books are there on your desk?', opts: ['much', 'many', 'old', 'often'], ans: 1, exp: '"books" là danh từ đếm được số nhiều -> dùng "How many".' },
-  { id: 'eq_6', cat: 'grammar', q: 'We ______ English on Mondays and Thursdays.', opts: ['has', 'have', 'having', 'are have'], ans: 1, exp: 'Chủ ngữ "We" ở thì hiện tại đơn dùng "have".' },
-  { id: 'eq_7', cat: 'grammar', q: 'The cat is ______ the table and the sofa.', opts: ['between', 'in', 'under', 'on'], ans: 0, exp: 'Cấu trúc "between A and B" (ở giữa A và B).' },
-  { id: 'eq_8', cat: 'grammar', q: '______ your father work in a hospital?', opts: ['Do', 'Does', 'Is', 'Are'], ans: 1, exp: 'Câu hỏi hiện tại đơn với động từ thường "work" và chủ ngữ số ít "your father" -> dùng "Does".' },
-  { id: 'eq_9', cat: 'grammar', q: 'Mount Everest is the ______ mountain in the world.', opts: ['high', 'higher', 'highest', 'most high'], ans: 2, exp: 'So sánh nhất với tính từ ngắn "high" -> "the highest".' },
-  { id: 'eq_10', cat: 'grammar', q: 'You ______ make noise in the library.', opts: ['must', 'mustn’t', 'can', 'should'], ans: 1, exp: '"mustn’t" nghĩa là không được phép làm ồn trong thư viện.' },
-  { id: 'eq_11', cat: 'grammar', q: 'Nam is ______ than his younger brother.', opts: ['taller', 'tallest', 'tall', 'more tall'], ans: 0, exp: 'So sánh hơn với tính từ ngắn "tall" + than -> "taller".' },
-  { id: 'eq_12', cat: 'grammar', q: 'What ______ you doing at the moment?', opts: ['do', 'does', 'are', 'is'], ans: 2, exp: '"at the moment" -> Hiện tại tiếp diễn: What are you doing?' },
-  { id: 'eq_13', cat: 'vocab', q: 'We use a ______ to draw straight lines in Maths.', opts: ['compass', 'ruler', 'rubber', 'pencil case'], ans: 1, exp: '"ruler" là cây thước kẻ dùng để vẽ đường thẳng.' },
-  { id: 'eq_14', cat: 'vocab', q: 'A person who is friendly and likes meeting people is ______.', opts: ['shy', 'outgoing', 'lazy', 'boring'], ans: 1, exp: '"outgoing" nghĩa là cởi mở, hòa đồng.' },
-  { id: 'eq_15', cat: 'vocab', q: 'You can buy medicine at the ______.', opts: ['bakery', 'pharmacy', 'cinema', 'post office'], ans: 1, exp: '"pharmacy" là hiệu thuốc.' },
-  { id: 'eq_16', cat: 'vocab', q: 'Mai: "Would you like to go to the cinema tonight?" — Lan: "______"', opts: ['Yes, I’d love to!', 'Yes, I do.', 'No, I am not.', 'You’re welcome.'], ans: 0, exp: 'Lời mời "Would you like to...?" -> đáp lại lịch sự bằng "Yes, I’d love to!".' },
-  { id: 'eq_17', cat: 'vocab', q: 'In Viet Nam, people decorate their houses with peach blossoms at ______.', opts: ['Christmas', 'Tet', 'Halloween', 'Easter'], ans: 1, exp: 'Hoa đào (peach blossoms) là biểu tượng đặc trưng của dịp Tết Nguyên Đán.' },
-  { id: 'eq_18', cat: 'vocab', q: 'Ha Long Bay is a famous natural ______ in Viet Nam.', opts: ['wonder', 'desert', 'island', 'forest'], ans: 0, exp: '"natural wonder" nghĩa là kỳ quan thiên nhiên.' },
-  { id: 'eq_19', cat: 'vocab', q: 'Which room in the house do we usually cook meals in?', opts: ['Bedroom', 'Bathroom', 'Kitchen', 'Attic'], ans: 2, exp: '"Kitchen" là nhà bếp — nơi nấu ăn.' },
-  { id: 'eq_20', cat: 'vocab', q: 'Lan: "Thank you for helping me with my homework!" — Minh: "______"', opts: ['My pleasure!', 'Good luck!', 'See you!', 'I’m sorry.'], ans: 0, exp: 'Đáp lại lời cảm ơn dùng "My pleasure!" hoặc "You’re welcome!".' },
-  { id: 'eq_21', cat: 'vocab', q: 'In ______, we learn about mountains, rivers, and countries.', opts: ['History', 'Geography', 'Physics', 'Music'], ans: 1, exp: '"Geography" là môn Địa lý.' },
-  { id: 'eq_22', cat: 'vocab', q: 'Turn ______ at the traffic lights, and the bank is on your right.', opts: ['left', 'straight', 'cross', 'between'], ans: 0, exp: '"Turn left" nghĩa là rẽ trái.' },
-  { id: 'eq_23', cat: 'vocab', q: 'We should bring a ______ when going camping in the forest to see at night.', opts: ['torch', 'pillow', 'wardrobe', 'fridge'], ans: 0, exp: '"torch" là đèn pin dùng chiếu sáng ban đêm.' },
-  { id: 'eq_24', cat: 'vocab', q: 'A place where you can see many old things and paintings is a ______.', opts: ['museum', 'stadium', 'supermarket', 'factory'], ans: 0, exp: '"museum" là bảo tàng.' }
-];
+export const DEFAULT_ENGLISH_BANK: EnglishQuestion[] = GLOBAL_SUCCESS_ENGLISH_BANK;
 
 export const ENGLISH_WORDS = new Set([
   'hello', 'hi', 'good', 'morning', 'afternoon', 'evening', 'night', 'thank', 'thanks',
@@ -276,6 +252,7 @@ export const PET_SPECIES = [
     accentColor: '#FEF3C7',
     statLabel: '⚡ Tốc độ di chuyển & +Sao nhiệm vụ',
     desc: 'Chú cún thông minh chạy lon ton siêu đáng yêu, giúp tăng tốc độ dạo phố & thưởng thêm sao.',
+    hungerDecayPerMin: 0.55,
     stages: [
       { stage: 0 as const, title: 'Trứng Cún Vàng', minXp: 0, scale: 0.85, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Cún Con Lon Ton', minXp: 0, scale: 0.78, speedBonus: 0.35, starBonus: 1 },
@@ -294,6 +271,7 @@ export const PET_SPECIES = [
     accentColor: '#FCE7F3',
     statLabel: '⭐ Thưởng thêm Sao học tập & dạo phố',
     desc: 'Cô mèo phép thuật biết mọc cánh bướm khi tiến hóa, mang lại may mắn cộng sao mỗi ngày.',
+    hungerDecayPerMin: 0.5,
     stages: [
       { stage: 0 as const, title: 'Trứng Mèo Ngọc Trai', minXp: 0, scale: 0.85, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Mèo Con Xinh Xắn', minXp: 0, scale: 0.78, speedBonus: 0.25, starBonus: 1 },
@@ -312,6 +290,7 @@ export const PET_SPECIES = [
     accentColor: '#E0F2FE',
     statLabel: '🎓 Bậc thầy Tiếng Anh & +Sao vượt trội',
     desc: 'Bạn đồng hành thông thái giúp bé hăng say giải đố Tiếng Anh và nhận thưởng sao hậu hĩnh.',
+    hungerDecayPerMin: 0.45,
     stages: [
       { stage: 0 as const, title: 'Trứng Cú Tuyết Băng', minXp: 0, scale: 0.85, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Cú Bông Nhỏ Xíu', minXp: 0, scale: 0.78, speedBonus: 0.3, starBonus: 1 },
@@ -330,6 +309,7 @@ export const PET_SPECIES = [
     accentColor: '#F3E8FF',
     statLabel: '🌈 Bay nhanh siêu hạng & Hào quang Sao',
     desc: 'Sinh vật huyền thoại sừng pha lê tỏa sáng rực rỡ trên phố, nâng tối đa tốc độ & sao thưởng.',
+    hungerDecayPerMin: 0.6,
     stages: [
       { stage: 0 as const, title: 'Trứng Kỳ Lân Pha Lê', minXp: 0, scale: 0.85, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Ngựa Con Kỳ Lân', minXp: 0, scale: 0.8, speedBonus: 0.45, starBonus: 1 },
@@ -348,6 +328,7 @@ export const PET_SPECIES = [
     accentColor: '#FEF08A',
     statLabel: '🔥 Sức mạnh Toàn Năng Tối Thượng',
     desc: 'Trứng Rồng hiếm nhất khu phố — mục tiêu danh giá cho bé chăm chỉ nhất, tiến hóa thành Thần Long!',
+    hungerDecayPerMin: 0.7,
     stages: [
       { stage: 0 as const, title: 'Trứng Rồng Cổ Đại', minXp: 0, scale: 0.88, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Rồng Lửa Nhỏ', minXp: 0, scale: 0.82, speedBonus: 0.5, starBonus: 2 },
@@ -366,6 +347,7 @@ export const PET_SPECIES = [
     accentColor: '#FDF2F8',
     statLabel: '🐰 Nhảy Siêu Nhanh & +Sao Đáng Yêu',
     desc: 'Chú thỏ tai dài siêu dễ thương nhảy nhót tung tăng, giúp tăng tốc chạy cực nhanh trên phố.',
+    hungerDecayPerMin: 0.55,
     stages: [
       { stage: 0 as const, title: 'Trứng Thỏ Bạc', minXp: 0, scale: 0.85, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Thỏ Con Bông Gòn', minXp: 0, scale: 0.78, speedBonus: 0.45, starBonus: 1 },
@@ -384,6 +366,7 @@ export const PET_SPECIES = [
     accentColor: '#E0F2FE',
     statLabel: '🐧 Lướt Băng Nhanh & +Sao Kiên Trì',
     desc: 'Chú chim cánh cụt mũm mĩm lạch bạch siêu cưng, giúp bé luôn mát mẻ và cộng sao đều đặn.',
+    hungerDecayPerMin: 0.45,
     stages: [
       { stage: 0 as const, title: 'Trứng Cánh Cụt Băng', minXp: 0, scale: 0.85, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Cánh Cụt Bông Xám', minXp: 0, scale: 0.78, speedBonus: 0.3, starBonus: 1 },
@@ -402,6 +385,7 @@ export const PET_SPECIES = [
     accentColor: '#DCFCE7',
     statLabel: '🐼 Võ Sư Nhí & +Sao Siêu Chăm Chỉ',
     desc: 'Gấu trúc mũm mĩm tập võ công cùng bé, tiến hóa thành Đại Sư Kungfu bảo vệ cả nhà.',
+    hungerDecayPerMin: 0.5,
     stages: [
       { stage: 0 as const, title: 'Trứng Gấu Trúc Tre', minXp: 0, scale: 0.86, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Gấu Trúc Nhỏ Xíu', minXp: 0, scale: 0.8, speedBonus: 0.3, starBonus: 1 },
@@ -420,6 +404,7 @@ export const PET_SPECIES = [
     accentColor: '#FFEDD5',
     statLabel: '🦊 Lanh Lợi Tuyệt Đỉnh & +Sao Cao',
     desc: 'Chú cáo lửa nhanh nhẹn với chiếc đuôi bồng bềnh huyền bí, bứt phá tốc độ di chuyển.',
+    hungerDecayPerMin: 0.58,
     stages: [
       { stage: 0 as const, title: 'Trứng Hồ Ly Lửa', minXp: 0, scale: 0.86, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Cáo Con Tinh Nghịch', minXp: 0, scale: 0.8, speedBonus: 0.45, starBonus: 1 },
@@ -438,6 +423,7 @@ export const PET_SPECIES = [
     accentColor: '#FEF9C3',
     statLabel: '🦅 Huyền Thoại Tối Cao & +Sao Kỷ Lục',
     desc: 'Loài thần thú quý hiếm nhất B2KS với bộ lông rực sáng bầu trời — phần thưởng xứng đáng cho quán quân!',
+    hungerDecayPerMin: 0.65,
     stages: [
       { stage: 0 as const, title: 'Trứng Phượng Hoàng', minXp: 0, scale: 0.9, speedBonus: 0, starBonus: 0 },
       { stage: 1 as const, title: 'Chim Lửa Nhỏ', minXp: 0, scale: 0.84, speedBonus: 0.55, starBonus: 2 },

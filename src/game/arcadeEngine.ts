@@ -68,6 +68,7 @@ export interface ArcadeHostDeps {
   triggerSpeechBubble: (m: Member, text: string, isEng: boolean) => void;
   closeModal: (id: string) => void;
   maxParentPoints: number;
+  getMaxParentPoints?: () => number;
 }
 
 export interface ArcadeRoomState {
@@ -478,16 +479,20 @@ export function createArcadeEngine(deps: ArcadeHostDeps) {
       .map((id) => state.members.find((m) => m.id === id))
       .filter((m): m is Member => Boolean(m));
 
+    const parentCap = deps.getMaxParentPoints ? deps.getMaxParentPoints() : deps.maxParentPoints;
+
     if (isDraw) {
       participants.forEach((p) => {
-        p.points = deps.isParent(p) ? Math.min(deps.maxParentPoints, p.points + 1) : p.points + 1;
+        p.points = deps.isParent(p)
+          ? Math.max(p.points, Math.min(parentCap, p.points + 1))
+          : p.points + 1;
       });
       deps.playClick();
     } else if (winnerId) {
       const winnerMember = state.members.find((m) => m.id === winnerId);
       if (winnerMember) {
         winnerMember.points = deps.isParent(winnerMember)
-          ? Math.min(deps.maxParentPoints, winnerMember.points + r.pot)
+          ? Math.max(winnerMember.points, Math.min(parentCap, winnerMember.points + r.pot))
           : winnerMember.points + r.pot;
         deps.playSuccess();
         deps.triggerSpeechBubble(winnerMember, `Won +${r.pot}⭐ in ${cat.shortTitle}! 🏆`, true);

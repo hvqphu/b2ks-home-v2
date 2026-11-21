@@ -43,6 +43,7 @@ export interface HouseRoomDef {
   floor: string;
   ownerIds: string[];
   isUnlocked: boolean;
+  isDisabled?: boolean;
   doorSide: 'left' | 'right';
   wardrobe: { x: number; y: number } | null;
 }
@@ -2160,8 +2161,11 @@ export function drawHouseInteriorWorld(
   state: B2KSState,
   findAnyCatalogItem: (id: string) => any
 ) {
+  const f1Living = rooms.find((r) => r.id === 'f1_living');
+  const yShift = f1Living ? Math.max(0, f1Living.y - 570) : 0;
+  const totalFloors = 3 + Math.round(yShift / 230);
   const W = HOUSE_WORLD.width;
-  const H = HOUSE_WORLD.height;
+  const H = HOUSE_WORLD.height + yShift;
   const brand = ((state.familyName || 'B2KS').trim() || 'B2KS').toUpperCase();
 
   ctx.fillStyle = '#1C2833';
@@ -2170,8 +2174,8 @@ export function drawHouseInteriorWorld(
   ctx.fillStyle = '#F8F9F9';
   ctx.strokeStyle = '#2C3E50';
   ctx.lineWidth = 6;
-  ctx.fillRect(85, 95, 950, 670);
-  ctx.strokeRect(85, 95, 950, 670);
+  ctx.fillRect(85, 95, 950, 670 + yShift);
+  ctx.strokeRect(85, 95, 950, 670 + yShift);
 
   ctx.fillStyle = '#C0392B';
   ctx.beginPath();
@@ -2180,12 +2184,12 @@ export function drawHouseInteriorWorld(
   ctx.fillStyle = '#FFF';
   ctx.font = 'bold 17px Fredoka, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`🏢 NHÀ PHỐ GIA ĐÌNH ${brand} (3 TẦNG)`, 560, 68);
+  ctx.fillText(`🏢 NHÀ PHỐ GIA ĐÌNH ${brand} (${totalFloors} TẦNG)`, 560, 68);
 
   ctx.fillStyle = '#EBEDEF';
-  ctx.fillRect(500, 110, 120, 640);
+  ctx.fillRect(500, 110, 120, 640 + yShift);
   ctx.fillStyle = '#D5DBDB';
-  for (let sy = 175; sy < 720; sy += 24) {
+  for (let sy = 175; sy < 720 + yShift; sy += 24) {
     ctx.fillRect(528, sy, 64, 10);
     ctx.strokeStyle = '#AEB6BF';
     ctx.lineWidth = 1.5;
@@ -2195,38 +2199,64 @@ export function drawHouseInteriorWorld(
   ctx.fillStyle = '#8E44AD';
   ctx.strokeStyle = '#2C3E50';
   ctx.lineWidth = 3;
-  ctx.fillRect(528, 718, 64, 34);
-  ctx.strokeRect(528, 718, 64, 34);
+  ctx.fillRect(528, 718 + yShift, 64, 34);
+  ctx.strokeRect(528, 718 + yShift, 64, 34);
   ctx.fillStyle = '#FFF';
   ctx.font = 'bold 11px Fredoka, sans-serif';
-  ctx.fillText('🚪 RA PHỐ', 560, 739);
+  ctx.fillText('🚪 RA PHỐ', 560, 739 + yShift);
 
   rooms.forEach((r) => {
-    ctx.fillStyle = r.wall;
+    ctx.fillStyle = r.isDisabled ? '#CBD5E1' : r.wall;
     ctx.fillRect(r.x, r.y, r.w, r.h);
 
-    ctx.fillStyle = r.floor;
+    ctx.fillStyle = r.isDisabled ? '#94A3B8' : r.floor;
     ctx.fillRect(r.x, r.y + r.h - 65, r.w, 65);
 
     ctx.strokeStyle = '#2C3E50';
     ctx.lineWidth = 4;
     ctx.strokeRect(r.x, r.y, r.w, r.h);
 
-    ctx.fillStyle = 'rgba(44, 62, 80, 0.85)';
+    ctx.fillStyle = r.isDisabled ? 'rgba(51, 65, 85, 0.85)' : 'rgba(44, 62, 80, 0.85)';
     ctx.beginPath();
     ctx.roundRect(r.x + 12, r.y + 8, r.w - 24, 24, 6);
     ctx.fill();
     ctx.fillStyle = '#FFF';
     ctx.font = 'bold 12px Fredoka, sans-serif';
     ctx.textAlign = 'center';
-    const lockBadge = r.ownerIds && r.ownerIds.length > 0 ? (r.isUnlocked ? ' 🔓' : ' 🔒') : '';
+    const lockBadge = r.isDisabled
+      ? ' 🚫'
+      : r.ownerIds && r.ownerIds.length > 0
+        ? (r.isUnlocked ? ' 🔓' : ' 🔒')
+        : '';
     ctx.fillText(r.name + lockBadge, r.x + r.w / 2, r.y + 24);
 
     const doorX = r.doorSide === 'right' ? r.x + r.w - 6 : r.x - 6;
     const doorY = r.y + r.h - 90;
     const doorH = 85;
 
-    if (r.ownerIds && r.ownerIds.length > 0 && !r.isUnlocked) {
+    if (r.isDisabled) {
+      // Blocked vacant bedroom (wooden boards + frosted overlay)
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.28)';
+      ctx.fillRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4);
+      ctx.fillStyle = '#64748B';
+      ctx.fillRect(doorX, doorY, 12, doorH);
+      ctx.strokeStyle = '#1E293B';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(doorX, doorY, 12, doorH);
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
+      ctx.beginPath();
+      ctx.roundRect(r.x + 48, r.y + 82, r.w - 96, 48, 10);
+      ctx.fill();
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#334155';
+      ctx.font = 'bold 12px Fredoka, sans-serif';
+      ctx.fillText('🚫 PHÒNG CHƯA SỬ DỤNG', r.x + r.w / 2, r.y + 104);
+      ctx.font = '10.5px Fredoka, sans-serif';
+      ctx.fillStyle = '#64748B';
+      ctx.fillText('Tự mở khi gia đình thêm thành viên', r.x + r.w / 2, r.y + 121);
+    } else if (r.ownerIds && r.ownerIds.length > 0 && !r.isUnlocked) {
       ctx.fillStyle = '#873600';
       ctx.fillRect(doorX, doorY, 12, doorH);
       ctx.strokeStyle = '#2C3E50';
@@ -2242,49 +2272,58 @@ export function drawHouseInteriorWorld(
     }
   });
 
-  // Phòng khách
+  // Phòng khách (Tầng 1 trái)
   ctx.fillStyle = '#E74C3C';
   ctx.strokeStyle = '#2C3E50';
   ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.roundRect(135, 670, 125, 45, 8); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(135, 670 + yShift, 125, 45, 8); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#2C3E50';
-  ctx.fillRect(295, 595, 50, 26);
+  ctx.fillRect(295, 595 + yShift, 50, 26);
   ctx.fillStyle = '#3498DB';
-  ctx.fillRect(298, 598, 44, 18);
+  ctx.fillRect(298, 598 + yShift, 44, 18);
   ctx.fillStyle = '#FFF';
   ctx.font = 'bold 9px Fredoka, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('📺 TV', 320, 610);
+  ctx.fillText('📺 TV', 320, 610 + yShift);
   ctx.fillStyle = '#2C3E50';
-  ctx.fillRect(405, 620, 44, 34);
+  ctx.fillRect(405, 620 + yShift, 44, 34);
   ctx.fillStyle = '#FFF';
   ctx.font = 'bold 10px Fredoka, sans-serif';
-  ctx.fillText('📋 BẢNG', 427, 640);
+  ctx.fillText('📋 BẢNG', 427, 640 + yShift);
 
-  // Phòng ăn
+  // Phòng ăn (Tầng 1 phải)
   ctx.fillStyle = '#A04000';
-  ctx.beginPath(); ctx.ellipse(830, 665, 62, 32, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(830, 665 + yShift, 62, 32, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.font = '20px Arial';
-  ctx.fillText('🍲 🍗 🥗', 830, 671);
+  ctx.fillText('🍲 🍗 🥗', 830, 671 + yShift);
 
-  // Phòng bố mẹ
+  // Phòng bố mẹ (Tầng 2 phải)
   ctx.fillStyle = '#8E44AD';
-  ctx.beginPath(); ctx.roundRect(875, 405, 115, 78, 8); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(875, 405 + yShift, 115, 78, 8); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#FFF';
-  ctx.fillRect(888, 412, 36, 16);
-  ctx.fillRect(938, 412, 36, 16);
+  ctx.fillRect(888, 412 + yShift, 36, 16);
+  ctx.fillRect(938, 412 + yShift, 36, 16);
 
-  // Phòng con 1 & 2
-  ctx.fillStyle = '#3498DB';
-  ctx.beginPath(); ctx.roundRect(130, 175, 85, 68, 8); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#FFF'; ctx.fillRect(142, 182, 42, 14);
-
-  ctx.fillStyle = '#2ECC71';
-  ctx.beginPath(); ctx.roundRect(895, 175, 85, 68, 8); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#FFF'; ctx.fillRect(910, 182, 42, 14);
+  // Các phòng ngủ của con (Tầng 3, 4, 5...) - chỉ vẽ giường cho phòng đang hoạt động
+  const kidPalette = ['#3498DB', '#2ECC71', '#EC4899', '#F59E0B', '#8B5CF6', '#14B8A6'];
+  let kidBedIdx = 0;
+  rooms.forEach((r) => {
+    if (r.id.startsWith('f1_') || r.id.startsWith('f2_')) return;
+    if (r.isDisabled) return;
+    const bedColor = kidPalette[kidBedIdx % kidPalette.length];
+    kidBedIdx++;
+    const bedX = r.doorSide === 'right' ? r.x + 30 : r.x + r.w - 125;
+    const bedY = r.y + 65;
+    ctx.fillStyle = bedColor;
+    ctx.strokeStyle = '#2C3E50';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.roundRect(bedX, bedY, 85, 68, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFF';
+    ctx.fillRect(bedX + 13, bedY + 7, 42, 14);
+  });
 
   rooms.forEach((r) => {
-    if (!r.wardrobe) return;
+    if (!r.wardrobe || r.isDisabled) return;
     const wx = r.wardrobe.x;
     const wy = r.wardrobe.y;
     const isOpen = wardrobeOpenedRoomId === r.id;
@@ -2330,11 +2369,10 @@ export function drawHouseInteriorWorld(
     ctx.restore();
   });
 
-  // Phòng sinh hoạt chung (Tầng 2) — Tủ Sách Truyện Tranh Tiếng Anh Gia Đình
+  // Phòng sinh hoạt chung (Tầng 2 trái) — Tủ Sách Truyện Tranh Tiếng Anh Gia Đình
   const f2CommonRoom = rooms.find((r) => r.id === 'f2_common');
-  const commonHasOwner = Boolean(f2CommonRoom && f2CommonRoom.ownerIds && f2CommonRoom.ownerIds.length > 0);
-  const bx = commonHasOwner ? 140 : 165;
-  const by = commonHasOwner ? 580 : 386;
+  const bx = 165;
+  const by = f2CommonRoom ? f2CommonRoom.y + 46 : 386 + yShift;
 
   ctx.save();
   // Thảm đọc sách ấm áp
@@ -2372,22 +2410,20 @@ export function drawHouseInteriorWorld(
   });
 
   // Bàn trà nhỏ & truyện tranh đang mở
-  if (!commonHasOwner) {
-    ctx.fillStyle = '#D97706';
-    ctx.strokeStyle = '#2C3E50';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.roundRect(bx + 146, by + 54, 62, 34, 8);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#FEF3C7';
-    ctx.fillRect(bx + 158, by + 60, 18, 14);
-    ctx.fillRect(bx + 178, by + 60, 18, 14);
-    ctx.strokeStyle = '#2C3E50';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(bx + 158, by + 60, 18, 14);
-    ctx.strokeRect(bx + 178, by + 60, 18, 14);
-  }
+  ctx.fillStyle = '#D97706';
+  ctx.strokeStyle = '#2C3E50';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(bx + 146, by + 54, 62, 34, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#FEF3C7';
+  ctx.fillRect(bx + 158, by + 60, 18, 14);
+  ctx.fillRect(bx + 178, by + 60, 18, 14);
+  ctx.strokeStyle = '#2C3E50';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(bx + 158, by + 60, 18, 14);
+  ctx.strokeRect(bx + 178, by + 60, 18, 14);
 
   // Nhãn tủ sách
   ctx.fillStyle = '#0F766E';
@@ -2403,12 +2439,13 @@ export function drawHouseInteriorWorld(
   state.members.forEach((m) => {
     m.roomDecor.forEach((d) => {
       if (d.id === 'd_bookshelf') return;
-      drawWorldDecorItem(ctx, d.id, d.x, d.y, findAnyCatalogItem);
+      drawWorldDecorItem(ctx, d.id, d.x, d.y + yShift, findAnyCatalogItem);
     });
   });
 
   if (lighting.isNight) {
     rooms.forEach((r) => {
+      if (r.isDisabled) return;
       const grad = ctx.createRadialGradient(r.x + r.w / 2, r.y + 45, 10, r.x + r.w / 2, r.y + 80, 180);
       grad.addColorStop(0, 'rgba(255, 243, 176, 0.36)');
       grad.addColorStop(1, 'rgba(255, 243, 176, 0)');

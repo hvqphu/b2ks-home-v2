@@ -4,11 +4,13 @@ import {
   ActivityConfigItem,
   ActivityLogEntry,
   ActiveReactModal,
+  AdminNeighborhoodRecord,
   B2KSBridge,
   B2KSState,
   BgmThemeId,
   BuildingLayoutOverride,
   CrossWorldRequest,
+  EnglishGradeProgress,
   EnglishQuestion,
   FleaMarketListing,
   Member,
@@ -57,6 +59,10 @@ import {
   normalizeFamilySlug,
   resolveNeighborhoodLocations
 } from './constants';
+import {
+  CURRICULUM_BANK_VERSION,
+  getGlobalSuccessUnitTitle
+} from './englishCurriculum';
 import {
   buildLabSVGMarkup,
   getLabItemCanvasImage,
@@ -341,6 +347,108 @@ export function initB2KSGameEngine() {
 
   const LAST_FAMILY_KEY = 'b2ks_last_login_family_v1';
   const LEGACY_STORAGE_KEY = 'b2ks_daily_routines_rpg_v16';
+  const SHARED_ENGLISH_STORAGE_KEY = 'b2ks_shared_english_bank_v2';
+
+  let globalEnglishBank: EnglishQuestion[] = DEFAULT_ENGLISH_BANK.map((q) => ({ ...q }));
+  let sharedEnglishBankUpdatedAt = 0;
+  let lastSharedEnglishMetaCheckAt = 0;
+
+  function normalizeEnglishQuestionsList(raw: unknown): EnglishQuestion[] {
+    if (!Array.isArray(raw)) return [];
+    const out: EnglishQuestion[] = [];
+    raw.forEach((item: any, idx: number) => {
+      if (!item || typeof item !== 'object') return;
+      const qText = String(item.q || '').trim();
+      const opts = Array.isArray(item.opts) ? item.opts.map((o: any) => String(o ?? '').trim()) : [];
+      if (!qText || opts.length < 4 || opts.slice(0, 4).some((o: string) => !o)) return;
+      const rawGrade = Number(item.grade);
+      const grade = ([6, 7, 8, 9].includes(rawGrade) ? rawGrade : 6) as 6 | 7 | 8 | 9;
+      const unit = Math.max(1, Math.min(12, Math.round(Number(item.unit) || 1)));
+      const cat: 'grammar' | 'vocab' = item.cat === 'grammar' ? 'grammar' : 'vocab';
+      const ans = Math.max(0, Math.min(3, Math.round(Number(item.ans) || 0)));
+      out.push({
+        id: String(item.id || `eq_${grade}_${unit}_${idx}`),
+        cat,
+        grade,
+        unit,
+        unitTitle: String(item.unitTitle || getGlobalSuccessUnitTitle(grade, unit)),
+        q: qText,
+        opts: [opts[0], opts[1], opts[2], opts[3]],
+        ans,
+        exp: String(item.exp || ''),
+        custom: Boolean(item.custom)
+      });
+    });
+    return out;
+  }
+
+  function loadSharedEnglishBank() {
+    try {
+      const raw = localStorage.getItem(SHARED_ENGLISH_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed &&
+          Number(parsed.version) >= CURRICULUM_BANK_VERSION &&
+          Array.isArray(parsed.questions) &&
+          parsed.questions.length > 0
+        ) {
+          const normalized = normalizeEnglishQuestionsList(parsed.questions);
+          if (normalized.length > 0) {
+            globalEnglishBank = normalized;
+            sharedEnglishBankUpdatedAt = Number(parsed.updatedAt) || 0;
+            if (state) state.englishQuestions = globalEnglishBank;
+            return;
+          }
+        }
+      }
+    } catch {
+      // fallback to built-in 1,920-question bank
+    }
+    globalEnglishBank = DEFAULT_ENGLISH_BANK.map((q) => ({ ...q }));
+    sharedEnglishBankUpdatedAt = 0;
+    if (state) state.englishQuestions = globalEnglishBank;
+  }
+
+  function saveSharedEnglishBank(questions: EnglishQuestion[], updatedAt = Date.now(), pushCloud = true) {
+    const clean = normalizeEnglishQuestionsList(questions);
+    if (clean.length === 0) return;
+    globalEnglishBank = clean;
+    sharedEnglishBankUpdatedAt = updatedAt;
+    if (state) state.englishQuestions = globalEnglishBank;
+    try {
+      localStorage.setItem(
+        SHARED_ENGLISH_STORAGE_KEY,
+        JSON.stringify({
+          version: CURRICULUM_BANK_VERSION,
+          updatedAt,
+          questions: globalEnglishBank
+        })
+      );
+    } catch {
+      // ignore storage quota errors
+    }
+    if (pushCloud && deviceConfig.firebaseUrl) {
+      fetch(`${deviceConfig.firebaseUrl}/b2ks_shared_english_bank.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          version: CURRICULUM_BANK_VERSION,
+          updatedAt,
+          questions: globalEnglishBank
+        })
+      }).catch(() => {});
+      fetch(`${deviceConfig.firebaseUrl}/b2ks_shared_english_bank_meta.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          version: CURRICULUM_BANK_VERSION,
+          updatedAt,
+          count: globalEnglishBank.length
+        })
+      }).catch(() => {});
+    }
+  }
 
   function getActiveFamilySlug(overrideName?: string): string {
     return normalizeFamilySlug(overrideName ?? state?.familyName ?? localStorage.getItem(LAST_FAMILY_KEY) ?? 'B2KS');
@@ -367,47 +475,52 @@ export function initB2KSGameEngine() {
     return `b2ks_member_archive_v1_${getActiveFamilySlug(overrideName)}`;
   }
 
-  function createFreshDefaultState(familyDisplayName = 'B2KS'): B2KSState {
-    const cleanName = (familyDisplayName || 'B2KS').trim() || 'B2KS';
-    const storedPin = localStorage.getItem('b2ks_parent_pin');
-    const validPin = storedPin && storedPin.length >= 4 && storedPin !== '1111' ? storedPin : '1234';
+  function defaultEnglishProgressMap(): Record<number, EnglishGradeProgress> {
     return {
-      currentUserId: deviceConfig.currentMemberId || 'dad',
-      familyName: cleanName,
-      familyNameUpdatedAt: 0,
-      gamePassword: '1111',
-      gamePasswordUpdatedAt: 0,
-      parentPin: validPin,
-      parentPinUpdatedAt: parseInt(localStorage.getItem('b2ks_parent_pin_ts') || '0', 10),
-      bgmTheme: AudioEngine.themeId || 'sunny_town',
-      buildingLayouts: {},
-      buildingLayoutsUpdatedAt: 0,
-      updatedAt: 0,
-      familyMessages: [],
-      house: { plotIndex: 1, style: 'modern' },
-      members: [
-        {
-          id: 'dad', name: 'Bố', role: 'Bố', age: DEFAULT_MEMBER_AGES.dad, points: 200, pointsUpdatedAt: 0,
-          hairStyle: 'short', hairColor: '#2C3E50',
-          shirtColor: '#2980B9', shirtPattern: 'collar',
-          pantsColor: '#34495E', pantsStyle: 'pants',
-          outfit: '', inventory: ['d_pc'], vouchers: [], petAccessories: [],
-          roomUnlocked: false, roomWall: '#D6EAF8',
-          roomDecor: [{ id: 'd_pc', icon: '💻', x: 650, y: 470 }],
-          unlockedZooAnimals: [], englishQuizHistory: [],
-          scene: 'neighborhood', x: 860, y: 435, dir: 'down', speech: null
-        },
-        {
-          id: 'mom', name: 'Mẹ', role: 'Mẹ', age: DEFAULT_MEMBER_AGES.mom, points: 200, pointsUpdatedAt: 0,
-          hairStyle: 'long', hairColor: '#5D4037',
-          shirtColor: '#E91E63', shirtPattern: 'heart',
-          pantsColor: '#8E44AD', pantsStyle: 'skirt',
-          outfit: '', inventory: ['d_plant'], vouchers: [], petAccessories: [],
-          roomUnlocked: true, roomWall: '#FADBD8',
-          roomDecor: [{ id: 'd_plant', icon: '🪴', x: 960, y: 470 }],
-          unlockedZooAnimals: [], englishQuizHistory: [],
-          scene: 'neighborhood', x: 815, y: 445, dir: 'down', speech: null
-        },
+      6: { unit: 1, highScoreStreak: 0 },
+      7: { unit: 1, highScoreStreak: 0 },
+      8: { unit: 1, highScoreStreak: 0 },
+      9: { unit: 1, highScoreStreak: 0 }
+    };
+  }
+
+  function createFreshDefaultState(
+    familyDisplayName = 'B2KS',
+    opts?: { parentsOnly?: boolean; dadName?: string; momName?: string }
+  ): B2KSState {
+    const cleanName = (familyDisplayName || 'B2KS').trim() || 'B2KS';
+    const parentsOnly = Boolean(opts?.parentsOnly);
+    const slug = normalizeFamilySlug(cleanName);
+    const storedPin = !parentsOnly && slug === 'b2ks' ? localStorage.getItem('b2ks_parent_pin') : null;
+    const validPin = storedPin && storedPin.length >= 4 && storedPin !== '1111' ? storedPin : '1234';
+
+    const members: Member[] = [
+      {
+        id: 'dad', name: (opts?.dadName || 'Bố').trim() || 'Bố', role: 'Bố', age: DEFAULT_MEMBER_AGES.dad, points: 200, pointsUpdatedAt: 0,
+        hairStyle: 'short', hairColor: '#2C3E50',
+        shirtColor: '#2980B9', shirtPattern: 'collar',
+        pantsColor: '#34495E', pantsStyle: 'pants',
+        outfit: '', inventory: ['d_pc'], vouchers: [], petAccessories: [],
+        roomUnlocked: false, roomWall: '#D6EAF8',
+        roomDecor: [{ id: 'd_pc', icon: '💻', x: 650, y: 470 }],
+        unlockedZooAnimals: [], englishQuizHistory: [], englishProgress: defaultEnglishProgressMap(),
+        scene: 'neighborhood', x: 860, y: 435, dir: 'down', speech: null
+      },
+      {
+        id: 'mom', name: (opts?.momName || 'Mẹ').trim() || 'Mẹ', role: 'Mẹ', age: DEFAULT_MEMBER_AGES.mom, points: 200, pointsUpdatedAt: 0,
+        hairStyle: 'long', hairColor: '#5D4037',
+        shirtColor: '#E91E63', shirtPattern: 'heart',
+        pantsColor: '#8E44AD', pantsStyle: 'skirt',
+        outfit: '', inventory: ['d_plant'], vouchers: [], petAccessories: [],
+        roomUnlocked: true, roomWall: '#FADBD8',
+        roomDecor: [{ id: 'd_plant', icon: '🪴', x: 960, y: 470 }],
+        unlockedZooAnimals: [], englishQuizHistory: [], englishProgress: defaultEnglishProgressMap(),
+        scene: 'neighborhood', x: 815, y: 445, dir: 'down', speech: null
+      }
+    ];
+
+    if (!parentsOnly) {
+      members.push(
         {
           id: 'kid1', name: 'Kem', role: 'Con gái', age: DEFAULT_MEMBER_AGES.kid1, points: 40, pointsUpdatedAt: 0,
           hairStyle: 'pigtails', hairColor: '#4E342E',
@@ -416,7 +529,7 @@ export function initB2KSGameEngine() {
           outfit: '', inventory: [], vouchers: [], petAccessories: [],
           roomUnlocked: false, roomWall: '#FADBD8',
           roomDecor: [],
-          unlockedZooAnimals: [], englishQuizHistory: [],
+          unlockedZooAnimals: [], englishQuizHistory: [], englishProgress: defaultEnglishProgressMap(),
           scene: 'neighborhood', x: 905, y: 445, dir: 'left', speech: null
         },
         {
@@ -427,29 +540,51 @@ export function initB2KSGameEngine() {
           outfit: '', inventory: [], vouchers: [], petAccessories: [],
           roomUnlocked: false, roomWall: '#D5F5E3',
           roomDecor: [{ id: 'd_bear', icon: '🧸', x: 860, y: 230 }],
-          unlockedZooAnimals: [], englishQuizHistory: [],
+          unlockedZooAnimals: [], englishQuizHistory: [], englishProgress: defaultEnglishProgressMap(),
           scene: 'neighborhood', x: 945, y: 445, dir: 'left', speech: null
         }
-      ],
-      tasks: [
-        {
-          id: 1, type: 'chore', title: 'Dọn dẹp đồ chơi phòng khách',
-          creatorId: 'mom', assigneeId: 'kid1', reward: 15,
-          status: 'pending', createdAt: Date.now() - 3600000, completedAt: null,
-          parentFile: null, parentFileName: '', childFile: null, childFileName: '', childNote: '', grade: null
-        },
-        {
-          id: 2, type: 'homework', title: 'Viết 3 câu tiếng Anh về ngôi nhà của em',
-          creatorId: 'dad', assigneeId: 'kid2', reward: 25,
-          status: 'pending', createdAt: Date.now() - 1800000, completedAt: null,
-          parentFile: null, parentFileName: '', childFile: null, childFileName: '', childNote: '', grade: null
-        }
-      ],
+      );
+    }
+
+    const tasks: TaskItem[] = parentsOnly
+      ? []
+      : [
+          {
+            id: 1, type: 'chore', title: 'Dọn dẹp đồ chơi phòng khách',
+            creatorId: 'mom', assigneeId: 'kid1', reward: 15,
+            status: 'pending', createdAt: Date.now() - 3600000, completedAt: null,
+            parentFile: null, parentFileName: '', childFile: null, childFileName: '', childNote: '', grade: null
+          },
+          {
+            id: 2, type: 'homework', title: 'Viết 3 câu tiếng Anh về ngôi nhà của em',
+            creatorId: 'dad', assigneeId: 'kid2', reward: 25,
+            status: 'pending', createdAt: Date.now() - 1800000, completedAt: null,
+            parentFile: null, parentFileName: '', childFile: null, childFileName: '', childNote: '', grade: null
+          }
+        ];
+
+    return {
+      currentUserId: parentsOnly ? 'dad' : (deviceConfig.currentMemberId || 'dad'),
+      familyName: cleanName,
+      familyNameUpdatedAt: parentsOnly ? Date.now() : 0,
+      gamePassword: '1111',
+      gamePasswordUpdatedAt: parentsOnly ? Date.now() : 0,
+      parentPin: validPin,
+      parentPinUpdatedAt: parentsOnly ? Date.now() : parseInt(localStorage.getItem('b2ks_parent_pin_ts') || '0', 10),
+      bgmTheme: AudioEngine.themeId || 'sunny_town',
+      buildingLayouts: {},
+      buildingLayoutsUpdatedAt: 0,
+      dailyParentAllowance: DAILY_PARENT_ALLOWANCE,
+      updatedAt: parentsOnly ? Date.now() : 0,
+      familyMessages: [],
+      house: { plotIndex: 1, style: 'modern' },
+      members,
+      tasks,
       crossWorldItems: DEFAULT_CROSS_WORLD_ITEMS.map((x) => ({ ...x })),
       crossWorldRequests: [],
       fleaMarketListings: [],
       activityLogs: [],
-      englishQuestions: DEFAULT_ENGLISH_BANK.map((q) => ({ ...q })),
+      englishQuestions: globalEnglishBank,
       activityConfigs: { ...DEFAULT_ACTIVITY_CONFIGS },
       activityConfigsUpdatedAt: 0,
       chatHistory: [
@@ -460,6 +595,7 @@ export function initB2KSGameEngine() {
   }
 
   let state: B2KSState = createFreshDefaultState(localStorage.getItem(LAST_FAMILY_KEY) || deviceConfig.lastFamilyName || 'B2KS');
+  loadSharedEnglishBank();
 
   function getCurrentUser(): Member {
     return state.members.find((m) => m.id === state.currentUserId) || state.members[0];
@@ -483,6 +619,18 @@ export function initB2KSGameEngine() {
     if (!Array.isArray(m.customLabItems)) m.customLabItems = [];
     if (!Array.isArray(m.unlockedZooAnimals)) m.unlockedZooAnimals = [];
     if (!Array.isArray(m.englishQuizHistory)) m.englishQuizHistory = [];
+    if (!m.englishProgress || typeof m.englishProgress !== 'object') {
+      m.englishProgress = defaultEnglishProgressMap();
+    }
+    ([6, 7, 8, 9] as const).forEach((g) => {
+      const cur = m.englishProgress![g];
+      if (!cur || typeof cur !== 'object') {
+        m.englishProgress![g] = { unit: 1, highScoreStreak: 0 };
+      } else {
+        cur.unit = Math.max(1, Math.min(12, Math.round(Number(cur.unit) || 1)));
+        cur.highScoreStreak = Math.max(0, Math.min(3, Math.round(Number(cur.highScoreStreak) || 0)));
+      }
+    });
     if (!Array.isArray(m.pets)) m.pets = [];
     m.pets.forEach((p) => {
       if (!p.variant) p.variant = 'classic';
@@ -490,6 +638,7 @@ export function initB2KSGameEngine() {
       if (p.accessoryId === undefined) p.accessoryId = null;
       p.xp = Math.max(0, Number(p.xp) || 0);
       p.hatchProgress = Math.max(0, Math.min(100, Number(p.hatchProgress) || 0));
+      p.hunger = Math.max(0, Math.min(100, typeof p.hunger === 'number' && !Number.isNaN(p.hunger) ? p.hunger : 100));
       if (p.hatched) {
         const sp = getPetSpecies(p.speciesId);
         p.level = Math.max(1, Number(p.level) || 1, getPetLevelFromXp(p.xp));
@@ -569,6 +718,9 @@ export function initB2KSGameEngine() {
     if (!state.bgmTheme) state.bgmTheme = AudioEngine.themeId || 'sunny_town';
     if (!state.buildingLayouts || typeof state.buildingLayouts !== 'object') state.buildingLayouts = {};
     if (typeof state.buildingLayoutsUpdatedAt !== 'number') state.buildingLayoutsUpdatedAt = 0;
+    if (typeof state.dailyParentAllowance !== 'number' || Number.isNaN(state.dailyParentAllowance)) {
+      state.dailyParentAllowance = DAILY_PARENT_ALLOWANCE;
+    }
 
     if (!Array.isArray(state.crossWorldItems)) {
       state.crossWorldItems = DEFAULT_CROSS_WORLD_ITEMS.map((x) => ({ ...x }));
@@ -576,9 +728,7 @@ export function initB2KSGameEngine() {
     if (!Array.isArray(state.crossWorldRequests)) state.crossWorldRequests = [];
     if (!Array.isArray(state.fleaMarketListings)) state.fleaMarketListings = [];
     if (!Array.isArray(state.activityLogs)) state.activityLogs = [];
-    if (!Array.isArray(state.englishQuestions) || state.englishQuestions.length === 0) {
-      state.englishQuestions = DEFAULT_ENGLISH_BANK.map((q) => ({ ...q }));
-    }
+    state.englishQuestions = globalEnglishBank;
     if (!Array.isArray(state.familyMessages)) state.familyMessages = [];
     if (!Array.isArray(state.chatHistory)) state.chatHistory = [];
     if (!Array.isArray(state.tasks)) state.tasks = [];
@@ -674,6 +824,25 @@ export function initB2KSGameEngine() {
     return Array.from(byId.values());
   }
 
+  function mergeEnglishProgressMaps(
+    a?: Record<number, EnglishGradeProgress>,
+    b?: Record<number, EnglishGradeProgress>
+  ): Record<number, EnglishGradeProgress> {
+    const out = defaultEnglishProgressMap();
+    ([6, 7, 8, 9] as const).forEach((g) => {
+      const pa = a?.[g] || { unit: 1, highScoreStreak: 0 };
+      const pb = b?.[g] || { unit: 1, highScoreStreak: 0 };
+      const scoreA = (pa.unit || 1) * 10 + (pa.highScoreStreak || 0);
+      const scoreB = (pb.unit || 1) * 10 + (pb.highScoreStreak || 0);
+      const chosen = scoreA >= scoreB ? pa : pb;
+      out[g] = {
+        unit: Math.max(1, Math.min(12, Math.round(Number(chosen.unit) || 1))),
+        highScoreStreak: Math.max(0, Math.min(3, Math.round(Number(chosen.highScoreStreak) || 0)))
+      };
+    });
+    return out;
+  }
+
   function persistDurableMemberArchive() {
     try {
       const key = getMemberArchiveKey();
@@ -711,6 +880,7 @@ export function initB2KSGameEngine() {
           roomDecor: m.roomDecor || [],
           unlockedZooAnimals: unionStringLists(prev?.unlockedZooAnimals || [], m.unlockedZooAnimals || []),
           englishQuizHistory: mergeQuizHistory(prev?.englishQuizHistory || [], m.englishQuizHistory || []),
+          englishProgress: mergeEnglishProgressMaps(prev?.englishProgress, m.englishProgress),
           comicReadStats: {
             ...(m.comicReadStats || { date: new Date().toDateString(), count: 0, lastReadAt: 0, completedIds: [] }),
             completedIds: unionStringLists(prev?.comicReadStats?.completedIds || [], m.comicReadStats?.completedIds || [])
@@ -751,6 +921,9 @@ export function initB2KSGameEngine() {
         }
         if (Array.isArray(entry.englishQuizHistory)) {
           m.englishQuizHistory = mergeQuizHistory(m.englishQuizHistory, entry.englishQuizHistory);
+        }
+        if (entry.englishProgress) {
+          m.englishProgress = mergeEnglishProgressMaps(m.englishProgress, entry.englishProgress);
         }
         if (entry.comicReadStats && Array.isArray(entry.comicReadStats.completedIds)) {
           if (!m.comicReadStats) {
@@ -835,10 +1008,11 @@ export function initB2KSGameEngine() {
     const fbBase = getFirebaseBasePath();
     const cur = getCurrentUser();
     cur.memberUpdatedAt = cur.memberUpdatedAt || Date.now();
+    const { englishQuestions: _omitEng, ...sharedPayload } = state;
     fetch(`${deviceConfig.firebaseUrl}/${fbBase}/shared.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(state)
+      body: JSON.stringify(sharedPayload)
     }).catch(() => {});
 
     fetch(`${deviceConfig.firebaseUrl}/${fbBase}/auth_meta.json`, {
@@ -891,6 +1065,8 @@ export function initB2KSGameEngine() {
       slug,
       familyName: state.familyName || 'B2KS',
       updatedAt: Date.now(),
+      dailyParentAllowance: state.dailyParentAllowance ?? DAILY_PARENT_ALLOWANCE,
+      deleted: false,
       members: state.members.map((m) => ({
         id: m.id,
         name: m.name,
@@ -908,13 +1084,7 @@ export function initB2KSGameEngine() {
   }
 
   function syncEnglishBankToFirebase(questions: EnglishQuestion[]) {
-    state.englishQuestions = questions;
-    if (!deviceConfig.firebaseUrl) return;
-    fetch(`${deviceConfig.firebaseUrl}/${getFirebaseBasePath()}/english_questions.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(questions)
-    }).catch(() => {});
+    saveSharedEnglishBank(questions, Date.now(), true);
   }
 
   function syncCrossWorldRequestsToFirebase(reqs: CrossWorldRequest[]) {
@@ -978,7 +1148,8 @@ export function initB2KSGameEngine() {
 
       snapshotSavedPointsMap();
       hasLocalSaveFile = true;
-      localStorage.setItem(getFamilyStorageKey(), JSON.stringify(state));
+      const { englishQuestions: _omitLocalEng, ...localPayload } = state;
+      localStorage.setItem(getFamilyStorageKey(), JSON.stringify(localPayload));
       persistPointsLedger();
       persistDurableSecrets();
       persistDurableMemberArchive();
@@ -993,68 +1164,86 @@ export function initB2KSGameEngine() {
   }
 
   /* ==================== 5. HOUSE ROOMS & COLLISION ==================== */
-  function getHouseRooms(): HouseRoomDef[] {
+  function getHouseLayoutMetrics() {
     const kids = state.members.filter((m) => !isParent(m));
+    const extraFloors = Math.max(0, Math.ceil(Math.max(1, kids.length) / 2) - 1);
+    const yShift = extraFloors * 230;
+    return {
+      kids,
+      extraFloors,
+      yShift,
+      totalFloors: 3 + extraFloors,
+      houseHeight: HOUSE_WORLD.height + yShift
+    };
+  }
+
+  function getHouseRooms(): HouseRoomDef[] {
     const parents = state.members.filter((m) => isParent(m));
-    const kid1 = kids[0] || null;
-    const kid2 = kids[1] || null;
+    const { kids, extraFloors, yShift } = getHouseLayoutMetrics();
     const dad = parents.find((p) => p.role === 'Bố') || parents[0];
 
-    const extraMembers = state.members.filter(
-      (m) =>
-        !parents.some((p) => p.id === m.id) &&
-        (!kid1 || m.id !== kid1.id) &&
-        (!kid2 || m.id !== kid2.id)
-    );
-    const commonOwners = extraMembers.map((m) => m.id);
-
-    return [
-      { id: 'f1_living', name: '🛋️ Phòng Khách (Tầng 1)', x: 100, y: 570, w: 400, h: 180, wall: '#FCF3CF', floor: '#E59866', ownerIds: [], isUnlocked: true, doorSide: 'right', wardrobe: null },
-      { id: 'f1_dining', name: '🍽️ Phòng Ăn & Bếp (Tầng 1)', x: 620, y: 570, w: 400, h: 180, wall: '#FDEBD0', floor: '#DC7633', ownerIds: [], isUnlocked: true, doorSide: 'left', wardrobe: null },
+    const rooms: HouseRoomDef[] = [
+      { id: 'f1_living', name: '🛋️ Phòng Khách (Tầng 1)', x: 100, y: 570 + yShift, w: 400, h: 180, wall: '#FCF3CF', floor: '#E59866', ownerIds: [], isUnlocked: true, doorSide: 'right', wardrobe: null },
+      { id: 'f1_dining', name: '🍽️ Phòng Ăn & Bếp (Tầng 1)', x: 620, y: 570 + yShift, w: 400, h: 180, wall: '#FDEBD0', floor: '#DC7633', ownerIds: [], isUnlocked: true, doorSide: 'left', wardrobe: null },
       {
         id: 'f2_common',
-        name: extraMembers.length > 0 ? `🛏️ Phòng ${extraMembers[0].name} (Tầng 2)` : '🛋️ Sinh Hoạt Chung (Tầng 2)',
-        x: 100, y: 340, w: 400, h: 200,
+        name: '🛋️ Sinh Hoạt Chung (Tầng 2)',
+        x: 100, y: 340 + yShift, w: 400, h: 200,
         wall: '#D6EAF8', floor: '#CA6F1E',
-        ownerIds: commonOwners,
-        isUnlocked: extraMembers.length === 0 ? true : extraMembers.some((m) => m.roomUnlocked),
+        ownerIds: [],
+        isUnlocked: true,
         doorSide: 'right',
-        wardrobe: extraMembers.length > 0 ? { x: 145, y: 382 } : null
+        wardrobe: null
       },
       {
         id: 'f2_parents',
         name: '🛏️ Phòng Bố Mẹ (Tầng 2)',
-        x: 620, y: 340, w: 400, h: 200,
+        x: 620, y: 340 + yShift, w: 400, h: 200,
         wall: (dad && dad.roomWall) || '#FADBD8',
         floor: '#BA4A00',
         ownerIds: parents.map((p) => p.id),
         isUnlocked: parents.some((p) => p.roomUnlocked),
         doorSide: 'left',
-        wardrobe: { x: 760, y: 382 }
-      },
-      {
-        id: 'f3_kid1',
-        name: kid1 ? `🛏️ Phòng ${kid1.name} (Tầng 3)` : '🛏️ Phòng Ngủ 1 (Tầng 3)',
-        x: 100, y: 110, w: 400, h: 200,
-        wall: (kid1 && kid1.roomWall) || '#D5F5E3',
-        floor: '#E59866',
-        ownerIds: kid1 ? [kid1.id] : [],
-        isUnlocked: kid1 ? kid1.roomUnlocked : true,
-        doorSide: 'right',
-        wardrobe: { x: 335, y: 152 }
-      },
-      {
-        id: 'f3_kid2',
-        name: kid2 ? `🛏️ Phòng ${kid2.name} (Tầng 3)` : '🛏️ Phòng Ngủ 2 (Tầng 3)',
-        x: 620, y: 110, w: 400, h: 200,
-        wall: (kid2 && kid2.roomWall) || '#EBDEF0',
-        floor: '#E59866',
-        ownerIds: kid2 ? [kid2.id] : [],
-        isUnlocked: kid2 ? kid2.roomUnlocked : true,
-        doorSide: 'left',
-        wardrobe: { x: 775, y: 152 }
+        wardrobe: { x: 760, y: 382 + yShift }
       }
     ];
+
+    for (let k = 0; k <= extraFloors; k++) {
+      const floorNum = 3 + k;
+      const ry = 110 + (extraFloors - k) * 230;
+      const leftKid = kids[k * 2] || null;
+      const rightKid = kids[k * 2 + 1] || null;
+      const leftId = k === 0 ? 'f3_kid1' : `f${floorNum}_kid${k * 2 + 1}`;
+      const rightId = k === 0 ? 'f3_kid2' : `f${floorNum}_kid${k * 2 + 2}`;
+
+      rooms.push({
+        id: leftId,
+        name: leftKid ? `🛏️ Phòng ${leftKid.name} (Tầng ${floorNum})` : `🚫 Phòng Ngủ Trống (Tầng ${floorNum})`,
+        x: 100, y: ry, w: 400, h: 200,
+        wall: (leftKid && leftKid.roomWall) || '#D5F5E3',
+        floor: '#E59866',
+        ownerIds: leftKid ? [leftKid.id] : [],
+        isUnlocked: leftKid ? leftKid.roomUnlocked : false,
+        isDisabled: !leftKid,
+        doorSide: 'right',
+        wardrobe: leftKid ? { x: 335, y: ry + 42 } : null
+      });
+
+      rooms.push({
+        id: rightId,
+        name: rightKid ? `🛏️ Phòng ${rightKid.name} (Tầng ${floorNum})` : `🚫 Phòng Ngủ Trống (Tầng ${floorNum})`,
+        x: 620, y: ry, w: 400, h: 200,
+        wall: (rightKid && rightKid.roomWall) || '#EBDEF0',
+        floor: '#E59866',
+        ownerIds: rightKid ? [rightKid.id] : [],
+        isUnlocked: rightKid ? rightKid.roomUnlocked : false,
+        isDisabled: !rightKid,
+        doorSide: 'left',
+        wardrobe: rightKid ? { x: 775, y: ry + 42 } : null
+      });
+    }
+
+    return rooms;
   }
 
   function getRoomAtPosition(x: number, y: number): HouseRoomDef | null {
@@ -1085,7 +1274,8 @@ export function initB2KSGameEngine() {
   }
 
   function canMoveInsideHouse(member: Member, nextX: number, nextY: number): { allowed: boolean; blockedRoom?: HouseRoomDef | null } {
-    if (nextX >= 500 && nextX <= 620 && nextY >= 155 && nextY <= 745) return { allowed: true };
+    const { yShift } = getHouseLayoutMetrics();
+    if (nextX >= 500 && nextX <= 620 && nextY >= 155 && nextY <= 745 + yShift) return { allowed: true };
     const rooms = getHouseRooms();
     for (const r of rooms) {
       const doorTop = r.y + r.h - 95;
@@ -1098,6 +1288,9 @@ export function initB2KSGameEngine() {
       const inRoomFloor = nextX >= r.x + 14 && nextX <= r.x + r.w - 14 && nextY >= r.y + 42 && nextY <= r.y + r.h - 8;
 
       if (inDoorway || inRoomFloor) {
+        if (r.isDisabled) {
+          return { allowed: false, blockedRoom: r };
+        }
         const currentRoom = getRoomAtPosition(member.x, member.y);
         if ((!currentRoom || currentRoom.id !== r.id) && r.ownerIds && r.ownerIds.length > 0) {
           const isOwner = r.ownerIds.includes(member.id);
@@ -1233,7 +1426,7 @@ export function initB2KSGameEngine() {
       ['shop-npc-greeting', `“Chào mừng quý khách tới Siêu Thị ${brand}! Chọn kệ hàng bên dưới để đổi điểm lấy nội thất phòng & thẻ xem YouTube nhé! (Đặc quyền ngoài đời hãy ghé 🌌 Trung Tâm Xuyên Thế Giới)”`],
       ['fashion-modal-title', `👗 ${brand} Fashion Boutique & Sàn Thử Đồ`],
       ['salon-modal-title', `💇 ${brand} Hair Studio & Nhuộm Nghệ Thuật`],
-      ['english-modal-title', `🎓 ${brand} English Academy (Chuẩn Lớp 6 & Phát Âm)`],
+      ['english-modal-title', `🎓 ${brand} English Academy — Global Success (Lớp 6–9)`],
       ['arcade-modal-title', `🕹️ ${brand} eSports & Arcade Arena`],
       ['lab-modal-title', `🧪 Phòng Thí Nghiệm Sáng Tạo ${brand}`],
       ['soccer-modal-title', `⚽ Sân Bóng Đá ${brand} (Miễn Phí 0⭐)`],
@@ -1305,6 +1498,7 @@ export function initB2KSGameEngine() {
     }
 
     const showParentTools = isParent(user);
+    const showAdminBtn = getActiveFamilySlug() === 'b2ks' && user.role === 'Bố';
     const miniWinBtn = document.getElementById('hud-mini-window-btn');
     if (miniWinBtn) {
       miniWinBtn.style.display = showParentTools ? 'inline-flex' : 'none';
@@ -1316,6 +1510,10 @@ export function initB2KSGameEngine() {
     const familySyncBtn = document.getElementById('hud-family-sync-btn');
     if (familySyncBtn) {
       familySyncBtn.style.display = showParentTools ? 'inline-flex' : 'none';
+    }
+    const adminBtn = document.getElementById('hud-admin-btn');
+    if (adminBtn) {
+      adminBtn.style.display = showAdminBtn ? 'inline-flex' : 'none';
     }
     syncHudToolsVisibility();
 
@@ -1360,18 +1558,41 @@ export function initB2KSGameEngine() {
     if (menu && menu.classList.contains('open')) renderMemberDropdownList();
   }
 
+  function getDailyParentAllowance(): number {
+    return typeof state.dailyParentAllowance === 'number' && state.dailyParentAllowance >= 0
+      ? Math.round(state.dailyParentAllowance)
+      : DAILY_PARENT_ALLOWANCE;
+  }
+
+  function addParentPointsWithAllowanceCap(parent: Member, gain: number) {
+    if (gain <= 0) return;
+    const cap = Math.max(MAX_PARENT_POINTS, getDailyParentAllowance() * 4);
+    if (parent.points < cap) {
+      parent.points = Math.min(cap, parent.points + gain);
+    } else {
+      parent.points += gain;
+    }
+  }
+
   function checkDailyAllowance(pushCloud = true) {
     const today = new Date().toDateString();
     ensureStateArrays();
     if (state.lastDailyReset !== today) {
+      const allowance = getDailyParentAllowance();
+      const cap = Math.max(MAX_PARENT_POINTS, allowance * 4);
       state.members.forEach((m) => {
-        if (isParent(m)) m.points = Math.min(MAX_PARENT_POINTS, m.points + DAILY_PARENT_ALLOWANCE);
+        if (isParent(m) && allowance > 0 && m.points < cap) {
+          m.points = Math.min(cap, m.points + allowance);
+          m.pointsUpdatedAt = Date.now();
+        }
         m.tvSecondsUsedToday = 0;
         m.tvBonusSecondsToday = 0;
         m.tvLastDate = today;
       });
       state.lastDailyReset = today;
-      showToast(`🌅 Ngày mới! Bố và Mẹ nhận thêm +${DAILY_PARENT_ALLOWANCE}⭐ ngân sách!`);
+      if (allowance > 0) {
+        showToast(`🌅 Ngày mới! Bố và Mẹ nhận thêm +${allowance}⭐ ngân sách!`);
+      }
       saveGame(pushCloud);
     }
   }
@@ -1502,7 +1723,8 @@ export function initB2KSGameEngine() {
     saveGame,
     triggerSpeechBubble,
     closeModal,
-    maxParentPoints: MAX_PARENT_POINTS
+    maxParentPoints: MAX_PARENT_POINTS,
+    getMaxParentPoints: () => Math.max(MAX_PARENT_POINTS, getDailyParentAllowance() * 4)
   });
 
   const soccerGame = createSoccerMiniGame({
@@ -1741,10 +1963,10 @@ export function initB2KSGameEngine() {
         creatorBox.style.display = 'block';
         const assigneeSel = document.getElementById('task-assignee') as HTMLSelectElement | null;
         if (assigneeSel) {
-          assigneeSel.innerHTML = state.members
-            .filter((m) => !isParent(m))
-            .map((kid) => `<option value="${kid.id}">${escapeHtml(kid.name)} (${kid.role})</option>`)
-            .join('');
+          const kids = state.members.filter((m) => !isParent(m));
+          assigneeSel.innerHTML = kids.length > 0
+            ? kids.map((kid) => `<option value="${kid.id}">${escapeHtml(kid.name)} (${kid.role})</option>`).join('')
+            : '<option value="">-- Chưa có bé (thêm ở Phụ Huynh) --</option>';
         }
       } else {
         creatorBox.style.display = 'none';
@@ -1824,6 +2046,10 @@ export function initB2KSGameEngine() {
       return;
     }
 
+    if (!assigneeId) {
+      AudioEngine.playError();
+      return showToast('⚠️ Gia đình chưa có thành viên con! Hãy vào Bảng Phụ Huynh để thêm con trước.');
+    }
     if (reward <= 0 || user.points < reward) {
       AudioEngine.playError();
       return showToast(`❌ Không đủ điểm ngân sách! (Hiện có: ${user.points}⭐)`);
@@ -1969,7 +2195,7 @@ export function initB2KSGameEngine() {
         : task.reward;
     if (task.status !== 'completed') {
       const creator = state.members.find((m) => m.id === task.creatorId);
-      if (creator) creator.points = Math.min(MAX_PARENT_POINTS, creator.points + refund);
+      if (creator) addParentPointsWithAllowanceCap(creator, refund);
     }
     state.tasks.splice(idx, 1);
     AudioEngine.playClick();
@@ -2235,50 +2461,131 @@ export function initB2KSGameEngine() {
     saveGame();
   }
 
-  /* ==================== 14. GRADE 6 ENGLISH QUIZ (WEB SPEECH + DYNAMIC FIREBASE BANK) ==================== */
+  /* ==================== 14. GLOBAL SUCCESS 6-9 ENGLISH QUIZ (UNIT PROGRESSION) ==================== */
   let engQuizSession: {
     questions: EnglishQuestion[];
     currentIndex: number;
     score: number;
     answered: boolean;
-    topic: string;
-  } = { questions: [], currentIndex: 0, score: 0, answered: false, topic: 'mix' };
+    grade: 6 | 7 | 8 | 9;
+    unit: number;
+    unitTitle: string;
+  } = { questions: [], currentIndex: 0, score: 0, answered: false, grade: 6, unit: 1, unitTitle: 'Unit 1: My New School' };
+
+  function getMemberGradeProgress(member: Member, grade: 6 | 7 | 8 | 9): EnglishGradeProgress {
+    ensureMemberProps(member);
+    if (!member.englishProgress![grade]) {
+      member.englishProgress![grade] = { unit: 1, highScoreStreak: 0 };
+    }
+    return member.englishProgress![grade];
+  }
+
+  function renderEnglishGradeBar(activeGrade?: 6 | 7 | 8 | 9) {
+    const bar = document.getElementById('eng-topic-bar');
+    if (!bar) return;
+    const user = getCurrentUser();
+    const colors: Record<6 | 7 | 8 | 9, string> = {
+      6: '#0EA5E9',
+      7: '#10B981',
+      8: '#8B5CF6',
+      9: '#EA580C'
+    };
+    bar.innerHTML = ([6, 7, 8, 9] as const)
+      .map((g) => {
+        const prog = getMemberGradeProgress(user, g);
+        const isCur = activeGrade === g;
+        return `
+          <button type="button" class="btn btn-sm"
+            style="background:${isCur ? '#1E293B' : colors[g]}; color:#FFF; border:2px solid #2C3E50; flex:1; min-width:130px; flex-direction:column; gap:2px; padding:6px 8px;"
+            onclick="startEnglishGradeQuiz(${g})">
+            <span style="font-size:13px; font-weight:800;">📘 Tiếng Anh Lớp ${g}</span>
+            <span style="font-size:10.5px; opacity:0.95;">Unit ${prog.unit}/12 • Chuỗi &gt;8đ: ${prog.highScoreStreak}/3</span>
+          </button>
+        `;
+      })
+      .join('');
+  }
 
   function openEnglishCenterLobby() {
+    renderEnglishGradeBar();
     const body = document.getElementById('eng-quiz-body');
     if (!body) return;
+    const user = getCurrentUser();
+    const rowsHtml = ([6, 7, 8, 9] as const)
+      .map((g) => {
+        const prog = getMemberGradeProgress(user, g);
+        const title = getGlobalSuccessUnitTitle(g, prog.unit);
+        return `
+          <div style="background:#F8FAFC; border:1.5px solid #CBD5E1; border-radius:8px; padding:6px 8px; text-align:left;">
+            <div style="font-weight:800; color:#0F766E; font-size:12px;">Lớp ${g}: ${escapeHtml(title)}</div>
+            <div style="font-size:11px; color:#475569;">Tiến độ lên Unit: <b>${prog.highScoreStreak}/3 lần</b> đạt 9–10/10</div>
+          </div>
+        `;
+      })
+      .join('');
     body.innerHTML = `
-      <div style="background:#FFF; border:2.5px dashed #16A085; border-radius:12px; padding:24px 16px; text-align:center;">
-        <div style="font-size:38px; margin-bottom:8px;">📚✨</div>
+      <div style="background:#FFF; border:2.5px dashed #16A085; border-radius:12px; padding:18px 16px; text-align:center;">
+        <div style="font-size:36px; margin-bottom:6px;">📚✨</div>
         <div style="font-weight:700; font-size:15px; color:#117864; margin-bottom:6px;">
-          Sẵn sàng thử thách Tiếng Anh Lớp 6! (${state.englishQuestions.length} câu hỏi từ Firebase)
+          Trung Tâm Tiếng Anh Global Success Lớp 6–9 (${globalEnglishBank.length} câu hỏi chuẩn Bộ GD&amp;ĐT)
         </div>
-        <div style="font-size:13px; color:#555; max-width:440px; margin:0 auto;">
-          Hãy bấm chọn một thể loại đề thi ở phía trên (<b>Đề Tổng Hợp</b>, <b>Ngữ Pháp</b> hoặc <b>Từ Vựng & Giao Tiếp</b>) — hệ thống sẽ tự động đọc phát âm tiếng Anh chuẩn Mỹ để bạn luyện nghe song song!
+        <div style="font-size:12.5px; color:#555; max-width:500px; margin:0 auto 12px;">
+          Mỗi lượt gồm <b>10 câu (5 Từ vựng + 5 Ngữ pháp)</b> của Unit hiện tại. Đạt <b>trên 8 điểm (9–10/10) 3 lần liên tiếp</b> để mở khóa Unit tiếp theo!
         </div>
+        <div class="grid-2" style="gap:8px;">${rowsHtml}</div>
       </div>
     `;
   }
 
-  function startEnglishGrade6Quiz(topic = 'mix') {
+  function shuffleArrayCopy<T>(arr: T[]): T[] {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function startEnglishGradeQuiz(gradeOrTopic: 6 | 7 | 8 | 9 | string = 6) {
     AudioEngine.playClick();
     ensureStateArrays();
-    const pool =
-      topic === 'mix'
-        ? [...state.englishQuestions]
-        : state.englishQuestions.filter((item) => item.cat === topic);
-    const effectivePool = pool.length > 0 ? pool : [...state.englishQuestions];
-    for (let i = effectivePool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [effectivePool[i], effectivePool[j]] = [effectivePool[j], effectivePool[i]];
+    const numericGrade = Number(gradeOrTopic);
+    const grade = ([6, 7, 8, 9].includes(numericGrade) ? numericGrade : 6) as 6 | 7 | 8 | 9;
+    const user = getCurrentUser();
+    const prog = getMemberGradeProgress(user, grade);
+    const unit = prog.unit;
+    const unitTitle = getGlobalSuccessUnitTitle(grade, unit);
+
+    const unitPool = globalEnglishBank.filter(
+      (item) => (item.grade ?? 6) === grade && (item.unit ?? 1) === unit
+    );
+    const gradeFallback = globalEnglishBank.filter((item) => (item.grade ?? 6) === grade);
+    const basePool = unitPool.length >= 10 ? unitPool : gradeFallback.length >= 10 ? gradeFallback : globalEnglishBank;
+
+    const vocabPicked = shuffleArrayCopy(basePool.filter((q) => q.cat === 'vocab')).slice(0, 5);
+    const grammarPicked = shuffleArrayCopy(basePool.filter((q) => q.cat === 'grammar')).slice(0, 5);
+    const selectedIds = new Set([...vocabPicked, ...grammarPicked].map((x) => x.id));
+    const combined = [...vocabPicked, ...grammarPicked];
+
+    if (combined.length < 10) {
+      const extraPool = shuffleArrayCopy(basePool.filter((q) => !selectedIds.has(q.id)));
+      while (combined.length < 10 && extraPool.length > 0) {
+        const nextQ = extraPool.shift()!;
+        selectedIds.add(nextQ.id);
+        combined.push(nextQ);
+      }
     }
+
     engQuizSession = {
-      questions: effectivePool.slice(0, 10),
+      questions: shuffleArrayCopy(combined).slice(0, 10),
       currentIndex: 0,
       score: 0,
       answered: false,
-      topic
+      grade,
+      unit,
+      unitTitle
     };
+    renderEnglishGradeBar(grade);
     renderEnglishQuizQuestion();
   }
 
@@ -2299,32 +2606,80 @@ export function initB2KSGameEngine() {
       const gotHighBonus = correct >= 8 && highBonusCfg.enabled && highBonusCfg.reward > 0;
       if (gotHighBonus) starsEarned += highBonusCfg.reward;
 
-      user.points = isParent(user) ? Math.min(MAX_PARENT_POINTS, user.points + starsEarned) : user.points + starsEarned;
+      if (isParent(user)) {
+        addParentPointsWithAllowanceCap(user, starsEarned);
+      } else {
+        user.points += starsEarned;
+      }
+
+      const prog = getMemberGradeProgress(user, engQuizSession.grade);
+      let promotedToUnit: number | null = null;
+      let masteredAllUnits = false;
+      if (correct > 8) {
+        prog.highScoreStreak = (prog.highScoreStreak || 0) + 1;
+        if (prog.highScoreStreak >= 3) {
+          if (prog.unit < 12) {
+            prog.unit += 1;
+            prog.highScoreStreak = 0;
+            promotedToUnit = prog.unit;
+          } else {
+            prog.highScoreStreak = 3;
+            masteredAllUnits = true;
+          }
+        }
+      } else {
+        prog.highScoreStreak = 0;
+      }
+      user.englishProgress![engQuizSession.grade] = { ...prog };
+      user.memberUpdatedAt = Date.now();
+
       user.englishQuizHistory!.push({
         date: new Date().toDateString(),
         score: correct,
         total,
         stars: starsEarned,
-        ts: Date.now()
+        ts: Date.now(),
+        grade: engQuizSession.grade,
+        unit: engQuizSession.unit
       });
       logActivity({
         memberId: user.id,
         memberName: user.name,
         action: 'quiz_done',
-        detail: `Hoàn thành bài thi Tiếng Anh (${correct}/${total} câu, +${starsEarned}⭐)`
+        detail: `Lớp ${engQuizSession.grade} - Unit ${engQuizSession.unit}: ${correct}/${total} câu (+${starsEarned}⭐${promotedToUnit ? `, LÊN UNIT ${promotedToUnit}!` : ''})`
       });
       AudioEngine.playSuccess();
-      if (correct >= 8) triggerConfetti();
+      if (correct >= 8 || promotedToUnit) triggerConfetti();
+      renderEnglishGradeBar(engQuizSession.grade);
       updateHUD();
       saveGame();
 
+      const nextUnitBanner = promotedToUnit
+        ? `<div style="background:#DCFCE7; border:2px solid #16A34A; border-radius:10px; padding:10px; margin:10px 0; color:#14532D; font-weight:800;">
+             🎉 XUẤT SẮC! Bạn đạt &gt;8 điểm 3 lần liên tiếp và đã mở khóa <b>Lớp ${engQuizSession.grade} • ${escapeHtml(getGlobalSuccessUnitTitle(engQuizSession.grade, promotedToUnit))}</b>!
+           </div>`
+        : masteredAllUnits
+        ? `<div style="background:#FEF3C7; border:2px solid #F59E0B; border-radius:10px; padding:10px; margin:10px 0; color:#92400E; font-weight:800;">
+             👑 TUYỆT VỜI! Bạn đã chinh phục trọn vẹn cả 12 Unit Tiếng Anh Lớp ${engQuizSession.grade}!
+           </div>`
+        : correct > 8
+        ? `<div style="background:#E0F2FE; border:1.5px solid #0284C7; border-radius:10px; padding:8px; margin:8px 0; font-size:12.5px; color:#075985;">
+             🔥 Chuỗi đạt &gt;8 điểm (9–10/10): <b>${prog.highScoreStreak}/3 lần</b> — cố gắng ${Math.max(0, 3 - prog.highScoreStreak)} lần nữa để lên Unit ${Math.min(12, prog.unit + 1)}!
+           </div>`
+        : `<div style="background:#FFF1F2; border:1.5px solid #FB7185; border-radius:10px; padding:8px; margin:8px 0; font-size:12px; color:#9F1239;">
+             💡 Cần đạt <b>&gt;8 điểm (9–10/10)</b> đủ <b>3 lần liên tiếp</b> để lên Unit tiếp theo (Chuỗi hiện tại đã đặt lại: 0/3).
+           </div>`;
+
       body.innerHTML = `
         <div style="text-align:center; background:#FEF9E7; border:2.5px solid #F39C12; border-radius:12px; padding:16px;">
-          <div style="font-size:40px;">🏆</div>
-          <h3 style="margin:6px 0; color:#2C3E50;">Hoàn Thành Bài Thi Tiếng Anh!</h3>
+          <div style="font-size:40px;">${promotedToUnit ? '🎓🎆' : '🏆'}</div>
+          <h3 style="margin:6px 0; color:#2C3E50;">Hoàn Thành Lớp ${engQuizSession.grade} • ${escapeHtml(engQuizSession.unitTitle)}</h3>
           <p style="font-size:15px; margin:6px 0;">Kết quả của <b>${escapeHtml(user.name)}</b>: <b style="color:#27AE60; font-size:18px;">${correct} / ${total} câu đúng</b></p>
           <p style="font-size:14px; color:#D35400; font-weight:700;">⭐ Phần thưởng: +${starsEarned}⭐ ${gotHighBonus ? `(Bao gồm +${highBonusCfg.reward}⭐ thưởng xuất sắc!)` : ''}</p>
-          <button class="btn btn-primary" style="margin-top:8px;" onclick="startEnglishGrade6Quiz('${engQuizSession.topic}')">🔄 Làm Bộ Đề Ngẫu Nhiên Khác</button>
+          ${nextUnitBanner}
+          <button class="btn btn-primary" style="margin-top:8px;" onclick="startEnglishGradeQuiz(${engQuizSession.grade})">
+            ${promotedToUnit ? `🚀 Bắt Đầu Unit ${promotedToUnit} Ngay` : '🔄 Làm Lượt Mới (5 Từ vựng + 5 Ngữ pháp)'}
+          </button>
         </div>
       `;
       return;
@@ -2333,14 +2688,20 @@ export function initB2KSGameEngine() {
     const qObj = engQuizSession.questions[engQuizSession.currentIndex];
     const qNum = engQuizSession.currentIndex + 1;
     const letters = ['A', 'B', 'C', 'D'];
+    const prog = getMemberGradeProgress(getCurrentUser(), engQuizSession.grade);
+    const catBadge = qObj.cat === 'vocab' ? '🔤 Từ vựng' : '📘 Ngữ pháp';
 
     body.innerHTML = `
       <div style="background:#FFF; border:2.5px solid #2C3E50; border-radius:12px; padding:12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
-          <span class="tag" style="background:#D6EAF8;">Câu ${qNum} / ${engQuizSession.questions.length}</span>
+          <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+            <span class="tag" style="background:#CCFBF1; border-color:#0D9488; color:#115E59;">Lớp ${engQuizSession.grade} • ${escapeHtml(engQuizSession.unitTitle)}</span>
+            <span class="tag" style="background:#FEF3C7; border-color:#D97706; color:#92400E;">Chuỗi &gt;8đ: ${prog.highScoreStreak}/3</span>
+            <span class="tag" style="background:#D6EAF8;">Câu ${qNum}/${engQuizSession.questions.length} · ${catBadge}</span>
+          </div>
           <div style="display:flex; gap:6px; align-items:center;">
-            <button type="button" class="btn btn-sm btn-accent" onclick="speakCurrentEnglishQuiz()">🔊 Nghe phát âm</button>
-            <span class="points-pill">Đúng: ${engQuizSession.score} câu</span>
+            <button type="button" class="btn btn-sm btn-accent" onclick="speakCurrentEnglishQuiz()">🔊 Nghe</button>
+            <span class="points-pill">Đúng: ${engQuizSession.score}</span>
           </div>
         </div>
         <div style="font-size:15.5px; font-weight:700; color:#2C3E50; margin-bottom:12px; line-height:1.45;">
@@ -3128,7 +3489,12 @@ export function initB2KSGameEngine() {
               <option value="family_quest">🤝 Đồng đội</option>
             </select>
             <select id="phone-task-assignee" style="padding:5px; border:2px solid #2C3E50; border-radius:6px; font-size:12px;">
-              ${state.members.filter((m) => !isParent(m)).map((kid) => `<option value="${kid.id}">${escapeHtml(kid.name)}</option>`).join('')}
+              ${(() => {
+                const kids = state.members.filter((m) => !isParent(m));
+                return kids.length > 0
+                  ? kids.map((kid) => `<option value="${kid.id}">${escapeHtml(kid.name)}</option>`).join('')
+                  : '<option value="">-- Chưa có bé --</option>';
+              })()}
             </select>
           </div>
           <div style="display:flex; gap:6px; margin-bottom:6px;">
@@ -3296,7 +3662,8 @@ export function initB2KSGameEngine() {
     if (!isHudCollection && petShopTab === 'eggs') {
       body.innerHTML = `
         <div style="background:#FFFBEB; border:1.5px solid #F59E0B; border-radius:10px; padding:7px 10px; margin-bottom:10px; font-size:11.5px; color:#92400E;">
-          🎲 <b>Tỉ lệ nở ngẫu nhiên khi ấp thành công:</b> Giới tính (50% ♂️ / 50% ♀️) • Màu hiếm (${PET_VARIANT_DEFS.map((v) => `${v.label} ${v.chancePercent}%`).join(' • ')})
+          🎲 <b>Tỉ lệ nở ngẫu nhiên:</b> Giới tính (50% ♂️ / 50% ♀️) • Màu hiếm (${PET_VARIANT_DEFS.map((v) => `${v.label} ${v.chancePercent}%`).join(' • ')})<br>
+          ⏳ <b>Cơ chế Độ No:</b> Chỉ giảm nhẹ khi đang Đồng hành ngoài map. Khi <b>Độ no &gt; 0%</b> mới kích hoạt +Tốc độ &amp; +Sao thưởng!
         </div>
         <div class="grid-2">${PET_SPECIES.map((sp) => {
           const s1 = sp.stages[1];
@@ -3314,7 +3681,8 @@ export function initB2KSGameEngine() {
               <div style="font-size:11.5px; color:#334155;">${escapeHtml(sp.desc)}</div>
               <div style="background:rgba(255,255,255,0.85); border-radius:8px; padding:5px 7px; font-size:10.5px; color:#475569;">
                 • GĐ1: +${s1.speedBonus} Tốc độ, +${s1.starBonus}⭐<br>
-                • GĐ4 (${escapeHtml(s4.title)}): <b>+${s4.speedBonus} Tốc độ, +${s4.starBonus}⭐</b>
+                • GĐ4 (${escapeHtml(s4.title)}): <b>+${s4.speedBonus} Tốc độ, +${s4.starBonus}⭐</b><br>
+                • ⏳ Giảm độ no khi đi cùng: <b>-${sp.hungerDecayPerMin}%/phút</b>
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
                 <span class="points-pill" style="font-size:12.5px;">⭐ ${sp.eggPrice}</span>
@@ -3402,6 +3770,9 @@ export function initB2KSGameEngine() {
     }
 
     body.innerHTML = `
+      <div style="background:#ECFDF5; border:1.5px solid #10B981; border-radius:10px; padding:7px 10px; margin-bottom:8px; font-size:11.5px; color:#065F46;">
+        🐾 <b>Quy tắc Thú Cưng:</b> Chỉ khi chọn <b>Đồng Hành</b> và <b>Độ no &gt; 0%</b> thì bạn mới nhận được <b>+Tốc độ</b> &amp; <b>+Sao thưởng</b> (làm việc nhà, bài tập, đồng đội, Tiếng Anh, ăn, ngủ, đọc truyện). Độ no giảm chậm khi đi cùng chủ — nếu về <b>0%</b> thú sẽ báo đói &amp; tạm ngưng thưởng đến khi được cho ăn!
+      </div>
       <div style="background:#FFF; border:2px solid #F59E0B; border-radius:10px; padding:7px 10px; margin-bottom:10px; font-size:11.5px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
         <span>🍖 <b>Thức ăn trong túi:</b> ${foodChips}</span>
         ${isHudCollection
@@ -3421,6 +3792,7 @@ export function initB2KSGameEngine() {
           const xpText = nextReq
             ? `XP: <b>${pet.xp}/${nextReq.minXp}</b> (Lên ${escapeHtml(nextReq.nextStageTitle)})`
             : `XP: <b>${pet.xp}</b> (👑 Cấp Tối Thượng!)`;
+          const isHungry = pet.hatched && (pet.hunger || 0) <= 0;
 
           let actionHtml = '';
           if (!pet.hatched) {
@@ -3449,7 +3821,7 @@ export function initB2KSGameEngine() {
           }
 
           return `
-            <div class="card-item" style="background:${isEquipped ? '#FFFBEB' : '#FFF'}; border-color:${isEquipped ? '#D97706' : '#2C3E50'};">
+            <div class="card-item" style="background:${isEquipped ? '#FFFBEB' : '#FFF'}; border-color:${isHungry ? '#E11D48' : isEquipped ? '#D97706' : '#2C3E50'};">
               <div style="display:flex; gap:10px; align-items:center;">
                 <div style="flex-shrink:0; background:${sp.accentColor}; border-radius:12px; padding:4px; border:2px solid ${sp.primaryColor};">
                   ${renderPetArtSVG(sp.id, pet.stage, 64, { variant: pet.variant, gender: pet.gender, accessoryId: pet.accessoryId })}
@@ -3467,9 +3839,13 @@ export function initB2KSGameEngine() {
                       <span class="tag" style="font-size:10px; background:#FFF; color:${variantDef.badgeColor}; border-color:${variantDef.badgeColor};">🎨 ${escapeHtml(variantDef.label)}</span>
                       ${equippedAcc ? `<span class="tag" style="font-size:10px; background:#FCE7F3; color:#9D174D; border-color:#EC4899;">${equippedAcc.icon}</span>` : ''}
                     </div>
-                    <div style="font-size:11px; color:#334155; margin-top:2px;">⚡ +${stageDef.speedBonus} Tốc độ | ⭐ +${stageDef.starBonus} Sao</div>
+                    <div style="font-size:11px; color:${isHungry ? '#BE123C' : '#334155'}; margin-top:2px; font-weight:${isHungry ? '700' : '400'};">
+                      ${isHungry ? '⏸️ Tạm ngưng (+0 Tốc độ, +0⭐ do Đói)' : `⚡ +${stageDef.speedBonus} Tốc độ | ⭐ +${stageDef.starBonus} Sao ${isEquipped ? '(Đang kích hoạt)' : '(Chọn Đồng Hành để bật)'}`}
+                    </div>
                     <div style="font-size:10.5px; color:#64748B;">${xpText}</div>
-                    <div style="font-size:10.5px; color:#059669;">😋 Độ no: ${Math.round(pet.hunger)}%</div>
+                    <div style="font-size:10.5px; color:${isHungry ? '#E11D48' : '#059669'}; font-weight:700;">
+                      ${isHungry ? '❗ ĐÓI BỤNG (0%) — Hãy cho ăn ngay!' : `😋 Độ no: ${Math.round(pet.hunger)}% (-${sp.hungerDecayPerMin}%/p khi đi cùng)`}
+                    </div>
                   ` : `
                     <div style="font-size:11px; color:#B45309; margin-top:3px;">🔥 Độ ấm ấp nở: <b>${Math.round(pet.hatchProgress)}%</b></div>
                     <div style="height:8px; background:#E2E8F0; border-radius:99px; overflow:hidden; margin-top:3px; border:1px solid #CBD5E1;">
@@ -3921,7 +4297,11 @@ export function initB2KSGameEngine() {
       const kids = state.members.filter((m) => !isParent(m));
       const participantIds = kids.map((k) => k.id);
       const totalCost = reward * participantIds.length;
-      if (participantIds.length < 2 || reward <= 0 || user.points < totalCost) {
+      if (participantIds.length < 2) {
+        AudioEngine.playError();
+        return showToast('⚠️ Cần ít nhất 2 bé để giao Nhiệm Vụ Đồng Đội!');
+      }
+      if (reward <= 0 || user.points < totalCost) {
         AudioEngine.playError();
         return showToast(`❌ Cần ${totalCost}⭐ ngân sách (${reward}⭐/bé)!`);
       }
@@ -3942,6 +4322,10 @@ export function initB2KSGameEngine() {
       return;
     }
 
+    if (!assigneeId) {
+      AudioEngine.playError();
+      return showToast('⚠️ Gia đình chưa có thành viên con! Hãy vào Bảng Phụ Huynh để thêm con trước.');
+    }
     if (reward <= 0 || user.points < reward) {
       AudioEngine.playError();
       return showToast(`❌ Không đủ điểm ngân sách!`);
@@ -4043,9 +4427,10 @@ export function initB2KSGameEngine() {
 
   w.enterHouseScene = () => {
     const user = getCurrentUser();
+    const { yShift } = getHouseLayoutMetrics();
     user.scene = 'house';
     user.x = 560;
-    user.y = 700;
+    user.y = 700 + yShift;
     user.dir = 'up';
     closeModal('house-modal');
     AudioEngine.playSuccess();
@@ -4145,7 +4530,7 @@ export function initB2KSGameEngine() {
       earned += pb.starBonus;
       assignee.points += earned;
     }
-    if (creator && parentBonus > 0) creator.points = Math.min(MAX_PARENT_POINTS, creator.points + parentBonus);
+    if (creator && parentBonus > 0) addParentPointsWithAllowanceCap(creator, parentBonus);
     closeModal('hw-action-modal');
     AudioEngine.playCoin();
     showToast(parentBonus > 0 && assignee ? `🌟 Điểm cao ${grade}/10! ${assignee.name} +${earned}⭐ & ${creator?.name} +${parentBonus}⭐!` : `📝 Đã chấm ${grade}/10!`);
@@ -4281,7 +4666,8 @@ export function initB2KSGameEngine() {
     saveGame();
   };
 
-  w.startEnglishGrade6Quiz = startEnglishGrade6Quiz;
+  w.startEnglishGradeQuiz = startEnglishGradeQuiz;
+  w.startEnglishGrade6Quiz = startEnglishGradeQuiz;
   w.speakCurrentEnglishQuiz = () => {
     const q = engQuizSession.questions[engQuizSession.currentIndex];
     if (q) speakEnglish(q.q, 0.85);
@@ -4847,11 +5233,13 @@ export function initB2KSGameEngine() {
       };
     }
 
-    me.points += cfg.reward;
+    const petBonus = getMemberPetBonuses(me);
+    const totalAward = cfg.reward + petBonus.starBonus;
+    me.points += totalAward;
     stats.count += 1;
     stats.lastReadAt = now;
     me.memberUpdatedAt = now;
-    me.adminPointsUpdatedAt = now;
+    me.pointsUpdatedAt = now;
 
     AudioEngine.playCoin();
     triggerConfetti();
@@ -4860,18 +5248,22 @@ export function initB2KSGameEngine() {
       memberId: me.id,
       memberName: me.name,
       action: 'read_comic',
-      detail: `Đọc xong truyện tranh "${comicTitle}" (+${cfg.reward}⭐)`,
-      pointsDelta: cfg.reward
+      detail: `Đọc xong truyện tranh "${comicTitle}" (+${totalAward}⭐)`,
+      pointsDelta: totalAward
     });
-    showToast(`📚 Tuyệt vời! Hoàn thành truyện "${comicTitle}" nhận +${cfg.reward}⭐!`);
+    showToast(
+      petBonus.starBonus > 0
+        ? `📚 Tuyệt vời! Hoàn thành "${comicTitle}" nhận +${totalAward}⭐ (gồm +${petBonus.starBonus}⭐ Thú cưng)!`
+        : `📚 Tuyệt vời! Hoàn thành truyện "${comicTitle}" nhận +${totalAward}⭐!`
+    );
     updateHUD();
     saveGame(true);
     notifySubscribers();
 
     return {
       ok: true,
-      awarded: cfg.reward,
-      msg: `🎉 Chính xác! Bạn nhận được +${cfg.reward}⭐ khi hoàn thành "${comicTitle}"!`
+      awarded: totalAward,
+      msg: `🎉 Chính xác! Bạn nhận được +${totalAward}⭐ khi hoàn thành "${comicTitle}"!`
     };
   }
 
@@ -5105,12 +5497,13 @@ export function initB2KSGameEngine() {
         const dirData = await dirRes.json();
         if (dirData && typeof dirData === 'object') {
           Object.entries(dirData).forEach(([slug, val]: [string, any]) => {
-            if (!val || typeof val !== 'object' || slug === currentSlug) return;
-            if (!Array.isArray(val.members)) return;
+            if (!val || typeof val !== 'object' || slug === currentSlug || val.deleted) return;
+            if (!Array.isArray(val.members) || val.members.length === 0) return;
             bySlug.set(slug, {
               slug,
               familyName: String(val.familyName || slug),
               updatedAt: Number(val.updatedAt) || 0,
+              dailyParentAllowance: typeof val.dailyParentAllowance === 'number' ? val.dailyParentAllowance : undefined,
               members: val.members.map((m: any) => ({
                 id: String(m.id || ''),
                 name: String(m.name || 'Thành viên'),
@@ -5197,31 +5590,643 @@ export function initB2KSGameEngine() {
       }
       notifySubscribers();
     },
-    authenticateFamilyLogin: async (familyNameInput: string, passwordInput: string) => {
-      const cleanFamily = String(familyNameInput || 'B2KS').trim() || 'B2KS';
-      const enteredPw = String(passwordInput || '').trim();
-      const targetSlug = normalizeFamilySlug(cleanFamily);
-      const currentSlug = getActiveFamilySlug();
+    getActiveFamilySlug: () => getActiveFamilySlug(),
+    isB2KSDad: () => getActiveFamilySlug() === 'b2ks' && getCurrentUser().role === 'Bố',
+    getGlobalEnglishBank: () => globalEnglishBank,
+    importEnglishBankQuestions: (incoming: EnglishQuestion[], mode: 'merge' | 'replace' = 'merge') => {
+      const cleanIncoming = normalizeEnglishQuestionsList(incoming);
+      if (cleanIncoming.length === 0) {
+        return { ok: false, added: 0, updated: 0, total: globalEnglishBank.length, msg: '⚠️ Không có câu hỏi hợp lệ nào trong file CSV!' };
+      }
+      let nextBank: EnglishQuestion[] = [];
+      let added = 0;
+      let updated = 0;
+      if (mode === 'replace') {
+        nextBank = cleanIncoming;
+        added = cleanIncoming.length;
+      } else {
+        const byId = new Map<string, EnglishQuestion>();
+        globalEnglishBank.forEach((q) => byId.set(q.id, { ...q }));
+        cleanIncoming.forEach((q) => {
+          if (byId.has(q.id)) updated += 1;
+          else added += 1;
+          byId.set(q.id, q);
+        });
+        nextBank = Array.from(byId.values());
+      }
+      saveSharedEnglishBank(nextBank, Date.now(), true);
+      notifySubscribers();
+      return {
+        ok: true,
+        added,
+        updated,
+        total: globalEnglishBank.length,
+        msg:
+          mode === 'replace'
+            ? `✅ Đã thay thế bộ đề dùng chung thành công (${globalEnglishBank.length} câu)!`
+            : `✅ Đã nhập CSV thành công (+${added} mới, cập nhật ${updated} câu · Tổng: ${globalEnglishBank.length} câu)!`
+      };
+    },
+    resetEnglishBankToDefault: () => {
+      const fresh = DEFAULT_ENGLISH_BANK.map((q) => ({ ...q }));
+      saveSharedEnglishBank(fresh, Date.now(), true);
+      notifySubscribers();
+      return {
+        ok: true,
+        total: globalEnglishBank.length,
+        msg: `↺ Đã khôi phục bộ đề chuẩn Global Success (${globalEnglishBank.length} câu)!`
+      };
+    },
+    adminListNeighborhoods: async () => {
+      if (getActiveFamilySlug() !== 'b2ks' || getCurrentUser().role !== 'Bố') return [];
+      const fbUrl = deviceConfig.firebaseUrl;
+      const slugToNs = new Map<string, string>();
+      const deletedSlugs = new Set<string>();
+      const dirMap = new Map<string, any>();
 
-      if (targetSlug !== currentSlug || !hasLocalSaveFile) {
-        loadGame(cleanFamily);
-        if (targetSlug !== currentSlug && !hasLocalSaveFile) {
-          state.familyName = cleanFamily;
+      // Discover locally cached namespaces
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i) || '';
+        if (k === LEGACY_STORAGE_KEY) slugToNs.set('b2ks', 'b2ks_family_rpg_v16');
+        else if (k.startsWith('b2ks_state_')) {
+          const sl = k.replace('b2ks_state_', '');
+          if (sl) slugToNs.set(sl, getFamilyFirebaseRoot(sl));
+        }
+      }
+      slugToNs.set('b2ks', 'b2ks_family_rpg_v16');
+
+      if (fbUrl) {
+        try {
+          const [dirRes, shallowRes] = await Promise.all([
+            fetch(`${fbUrl}/b2ks_family_directory.json`),
+            fetch(`${fbUrl}/.json?shallow=true`)
+          ]);
+          const [dirData, shallowKeys] = await Promise.all([dirRes.json(), shallowRes.json()]);
+          if (dirData && typeof dirData === 'object') {
+            Object.entries(dirData).forEach(([sl, val]: [string, any]) => {
+              if (!val || typeof val !== 'object') return;
+              if (val.deleted && sl !== 'b2ks') {
+                deletedSlugs.add(sl);
+              } else {
+                dirMap.set(sl, val);
+                slugToNs.set(sl, getFamilyFirebaseRoot(sl));
+              }
+            });
+          }
+          if (shallowKeys && typeof shallowKeys === 'object') {
+            Object.keys(shallowKeys).forEach((ns) => {
+              if (ns === 'b2ks_family_rpg_v16') {
+                slugToNs.set('b2ks', ns);
+              } else if (ns.startsWith('b2ks_family_ns_')) {
+                const sl = ns.replace(/^b2ks_family_ns_/, '');
+                if (sl && !deletedSlugs.has(sl)) slugToNs.set(sl, ns);
+              }
+            });
+          }
+        } catch {
+          // ignore remote fetch errors
+        }
+      }
+
+      const activeSlug = getActiveFamilySlug();
+      const results: AdminNeighborhoodRecord[] = [];
+      const entries = Array.from(slugToNs.entries()).filter(([sl]) => !deletedSlugs.has(sl));
+
+      await Promise.all(
+        entries.map(async ([slug, ns]) => {
+          if (slug === activeSlug) {
+            const parents = state.members
+              .filter((m) => isParent(m))
+              .map((m) => ({ id: m.id, name: m.name, role: m.role, points: m.points }));
+            results.push({
+              slug,
+              familyName: state.familyName || 'B2KS',
+              updatedAt: state.updatedAt || 0,
+              dailyParentAllowance: getDailyParentAllowance(),
+              memberCount: state.members.length,
+              kidCount: state.members.filter((m) => !isParent(m)).length,
+              parents
+            });
+            return;
+          }
+
+          let remoteShared: any = null;
+          if (fbUrl) {
+            try {
+              const r = await fetch(`${fbUrl}/${ns}/shared.json`);
+              remoteShared = await r.json();
+            } catch {
+              remoteShared = null;
+            }
+          }
+
+          let sourceState = remoteShared && Array.isArray(remoteShared.members) ? remoteShared : null;
+          if (!sourceState) {
+            try {
+              const localRaw = localStorage.getItem(slug === 'b2ks' ? LEGACY_STORAGE_KEY : `b2ks_state_${slug}`);
+              if (localRaw) {
+                const parsed = JSON.parse(localRaw);
+                if (parsed && Array.isArray(parsed.members)) sourceState = parsed;
+              }
+            } catch {
+              // ignore
+            }
+          }
+
+          const dirEntry = dirMap.get(slug);
+          const membersList: any[] = sourceState?.members || dirEntry?.members || [];
+          if (membersList.length === 0) return;
+
+          const parents = membersList
+            .filter((m) => m.role === 'Bố' || m.role === 'Mẹ')
+            .map((m) => ({
+              id: String(m.id || ''),
+              name: String(m.name || 'Phụ huynh'),
+              role: String(m.role || 'Bố'),
+              points: Number(m.points) || 0
+            }));
+          const allowance =
+            typeof sourceState?.dailyParentAllowance === 'number'
+              ? sourceState.dailyParentAllowance
+              : typeof dirEntry?.dailyParentAllowance === 'number'
+              ? dirEntry.dailyParentAllowance
+              : DAILY_PARENT_ALLOWANCE;
+
+          results.push({
+            slug,
+            familyName: String(sourceState?.familyName || dirEntry?.familyName || slug.toUpperCase()),
+            updatedAt: Number(sourceState?.updatedAt || dirEntry?.updatedAt || 0),
+            dailyParentAllowance: allowance,
+            memberCount: membersList.length,
+            kidCount: membersList.filter((m) => m.role !== 'Bố' && m.role !== 'Mẹ').length,
+            parents
+          });
+        })
+      );
+
+      return results.sort((a, b) => {
+        if (a.slug === 'b2ks') return -1;
+        if (b.slug === 'b2ks') return 1;
+        return a.familyName.localeCompare(b.familyName);
+      });
+    },
+    adminCreateNeighborhood: async (familyNameInput: string, dadName?: string, momName?: string) => {
+      if (getActiveFamilySlug() !== 'b2ks' || getCurrentUser().role !== 'Bố') {
+        return { ok: false, msg: '❌ Chỉ Admin (Bố B2KS) mới có quyền tạo khu phố mới!' };
+      }
+      const cleanName = String(familyNameInput || '').trim().slice(0, 24);
+      if (!cleanName) return { ok: false, msg: '⚠️ Tên khu phố không được để trống!' };
+      const slug = normalizeFamilySlug(cleanName);
+      if (!slug || slug === 'b2ks') {
+        return { ok: false, msg: '⚠️ Tên khu phố này trùng với B2KS hoặc không hợp lệ!' };
+      }
+
+      const fbUrl = deviceConfig.firebaseUrl;
+      const ns = getFamilyFirebaseRoot(cleanName);
+      if (fbUrl) {
+        try {
+          const [dirR, metaR] = await Promise.all([
+            fetch(`${fbUrl}/b2ks_family_directory/${slug}.json`),
+            fetch(`${fbUrl}/${ns}/auth_meta.json`)
+          ]);
+          const [dirV, metaV] = await Promise.all([dirR.json(), metaR.json()]);
+          const hasDir = dirV && typeof dirV === 'object' && !dirV.deleted && Array.isArray(dirV.members) && dirV.members.length > 0;
+          const hasMeta = metaV && typeof metaV === 'object' && Boolean(metaV.gamePassword) && !dirV?.deleted;
+          if (hasDir || hasMeta) {
+            return { ok: false, msg: `⚠️ Khu phố "${cleanName}" đã tồn tại trên hệ thống!` };
+          }
+        } catch {
+          // ignore check error
+        }
+      }
+
+      const fresh = createFreshDefaultState(cleanName, {
+        parentsOnly: true,
+        dadName: dadName || 'Bố',
+        momName: momName || 'Mẹ'
+      });
+      const now = Date.now();
+      fresh.updatedAt = now;
+      const { englishQuestions: _omitEng, ...freshPayload } = fresh;
+
+      try {
+        localStorage.setItem(`b2ks_state_${slug}`, JSON.stringify(freshPayload));
+        localStorage.setItem(
+          `b2ks_durable_secrets_v1_${slug}`,
+          JSON.stringify({
+            familyName: cleanName,
+            familyNameUpdatedAt: now,
+            gamePassword: '1111',
+            gamePasswordUpdatedAt: now,
+            parentPin: '1234',
+            parentPinUpdatedAt: now
+          })
+        );
+      } catch {
+        // ignore storage quota
+      }
+
+      if (fbUrl) {
+        try {
+          await Promise.all([
+            fetch(`${fbUrl}/${ns}/auth_meta.json`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                familyName: cleanName,
+                familyNameUpdatedAt: now,
+                gamePassword: '1111',
+                gamePasswordUpdatedAt: now,
+                parentPin: '1234',
+                parentPinUpdatedAt: now
+              })
+            }),
+            fetch(`${fbUrl}/${ns}/shared.json`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(freshPayload)
+            }),
+            ...fresh.members.map((m) =>
+              fetch(`${fbUrl}/${ns}/member_data/${m.id}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(m)
+              })
+            ),
+            fetch(`${fbUrl}/b2ks_family_directory/${slug}.json`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                slug,
+                familyName: cleanName,
+                updatedAt: now,
+                dailyParentAllowance: DAILY_PARENT_ALLOWANCE,
+                deleted: false,
+                members: fresh.members.map((m) => ({
+                  id: m.id,
+                  name: m.name,
+                  role: m.role,
+                  age: m.age,
+                  outfit: m.outfit || '',
+                  points: m.points
+                }))
+              })
+            })
+          ]);
+        } catch {
+          return { ok: false, msg: '⚠️ Tạo cục bộ thành công nhưng chưa đồng bộ được lên Firebase!' };
+        }
+      }
+
+      return {
+        ok: true,
+        slug,
+        msg: `🎉 Đã tạo khu phố "${cleanName}" (chỉ gồm Bố & Mẹ)! MK game: 1111 · PIN PH: 1234`
+      };
+    },
+    adminDeleteNeighborhood: async (slugInput: string) => {
+      if (getActiveFamilySlug() !== 'b2ks' || getCurrentUser().role !== 'Bố') {
+        return { ok: false, msg: '❌ Chỉ Admin (Bố B2KS) mới có quyền xóa khu phố!' };
+      }
+      const slug = normalizeFamilySlug(slugInput);
+      if (!slug || slug === 'b2ks') {
+        return { ok: false, msg: '⚠️ Không thể xóa khu phố gốc B2KS!' };
+      }
+      const keysToRemove = [
+        `b2ks_state_${slug}`,
+        `b2ks_points_ledger_v1_${slug}`,
+        `b2ks_durable_secrets_v1_${slug}`,
+        `b2ks_member_archive_v1_${slug}`,
+        `b2ks_arcade_online_room_${slug}`,
+        `b2ks_soccer_online_room_${slug}`,
+        `b2ks_soccer_p2_input_${slug}`
+      ];
+      keysToRemove.forEach((k) => {
+        try {
+          localStorage.removeItem(k);
+        } catch {
+          // ignore
+        }
+      });
+
+      const fbUrl = deviceConfig.firebaseUrl;
+      if (fbUrl) {
+        try {
+          await Promise.all([
+            fetch(`${fbUrl}/b2ks_family_ns_${slug}.json`, { method: 'DELETE' }),
+            fetch(`${fbUrl}/b2ks_family_directory/${slug}.json`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                slug,
+                familyName: slug,
+                deleted: true,
+                updatedAt: Date.now(),
+                members: []
+              })
+            })
+          ]);
+        } catch {
+          return { ok: false, msg: '❌ Lỗi xóa dữ liệu khu phố trên Firebase!' };
+        }
+      }
+      return { ok: true, msg: `🗑️ Đã xóa khu phố (${slug}) khỏi hệ thống!` };
+    },
+    adminResetNeighborhoodPasswords: async (slugInput: string) => {
+      if (getActiveFamilySlug() !== 'b2ks' || getCurrentUser().role !== 'Bố') {
+        return { ok: false, msg: '❌ Chỉ Admin (Bố B2KS) mới có quyền reset mật khẩu!' };
+      }
+      const slug = normalizeFamilySlug(slugInput);
+      const now = Date.now();
+      const ns = slug === 'b2ks' ? 'b2ks_family_rpg_v16' : `b2ks_family_ns_${slug}`;
+
+      if (slug === getActiveFamilySlug()) {
+        state.gamePassword = '1111';
+        state.gamePasswordUpdatedAt = now;
+        state.parentPin = '1234';
+        state.parentPinUpdatedAt = now;
+        saveGame(true);
+      } else {
+        try {
+          const secKey = `b2ks_durable_secrets_v1_${slug}`;
+          const prevSec = JSON.parse(localStorage.getItem(secKey) || '{}') || {};
+          localStorage.setItem(
+            secKey,
+            JSON.stringify({
+              ...prevSec,
+              gamePassword: '1111',
+              gamePasswordUpdatedAt: now,
+              parentPin: '1234',
+              parentPinUpdatedAt: now
+            })
+          );
+          const stKey = `b2ks_state_${slug}`;
+          const prevRaw = localStorage.getItem(stKey);
+          if (prevRaw) {
+            const parsed = JSON.parse(prevRaw);
+            parsed.gamePassword = '1111';
+            parsed.gamePasswordUpdatedAt = now;
+            parsed.parentPin = '1234';
+            parsed.parentPinUpdatedAt = now;
+            parsed.updatedAt = now;
+            localStorage.setItem(stKey, JSON.stringify(parsed));
+          }
+        } catch {
+          // ignore
         }
       }
 
       const fbUrl = deviceConfig.firebaseUrl;
-      const fbPath = getFamilyFirebaseRoot(cleanFamily);
-      let remoteAuthMeta: any = null;
       if (fbUrl) {
         try {
-          const r = await fetch(`${fbUrl}/${fbPath}/auth_meta.json`);
-          remoteAuthMeta = await r.json();
+          await Promise.all([
+            fetch(`${fbUrl}/${ns}/auth_meta.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                gamePassword: '1111',
+                gamePasswordUpdatedAt: now,
+                parentPin: '1234',
+                parentPinUpdatedAt: now
+              })
+            }),
+            fetch(`${fbUrl}/${ns}/shared.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                gamePassword: '1111',
+                gamePasswordUpdatedAt: now,
+                parentPin: '1234',
+                parentPinUpdatedAt: now,
+                updatedAt: now
+              })
+            })
+          ]);
         } catch {
-          // ignore network hiccup; fallback to local secrets/state
+          return { ok: false, msg: '❌ Lỗi cập nhật mật khẩu lên Firebase!' };
+        }
+      }
+      return { ok: true, msg: `🔑 Đã reset 2 mật khẩu khu phố (${slug}) về mặc định: 1111 / 1234!` };
+    },
+    adminAdjustParentAccount: async (
+      slugInput: string,
+      payload: { dailyParentAllowance?: number; parentPoints?: Record<string, number> }
+    ) => {
+      if (getActiveFamilySlug() !== 'b2ks' || getCurrentUser().role !== 'Bố') {
+        return { ok: false, msg: '❌ Chỉ Admin (Bố B2KS) mới có quyền điều chỉnh!' };
+      }
+      const slug = normalizeFamilySlug(slugInput);
+      const now = Date.now();
+      const ns = slug === 'b2ks' ? 'b2ks_family_rpg_v16' : `b2ks_family_ns_${slug}`;
+
+      if (slug === getActiveFamilySlug()) {
+        if (typeof payload.dailyParentAllowance === 'number') {
+          state.dailyParentAllowance = Math.max(0, Math.round(payload.dailyParentAllowance));
+        }
+        if (payload.parentPoints) {
+          Object.entries(payload.parentPoints).forEach(([pid, pts]) => {
+            const m = state.members.find((x) => x.id === pid);
+            if (m && isParent(m)) {
+              m.points = Math.max(0, Math.round(pts));
+              m.pointsUpdatedAt = now;
+              m.adminPointsUpdatedAt = now;
+              m.memberUpdatedAt = now;
+            }
+          });
+        }
+        saveGame(true);
+        updateHUD();
+        return { ok: true, msg: `💰 Đã cập nhật điểm & ngân sách Phụ huynh khu phố "${state.familyName}"!` };
+      }
+
+      const fbUrl = deviceConfig.firebaseUrl;
+      let targetShared: any = null;
+      if (fbUrl) {
+        try {
+          const r = await fetch(`${fbUrl}/${ns}/shared.json`);
+          targetShared = await r.json();
+        } catch {
+          targetShared = null;
+        }
+      }
+      if (!targetShared || !Array.isArray(targetShared.members)) {
+        try {
+          const raw = localStorage.getItem(`b2ks_state_${slug}`);
+          if (raw) targetShared = JSON.parse(raw);
+        } catch {
+          // ignore
+        }
+      }
+      if (!targetShared || !Array.isArray(targetShared.members)) {
+        return { ok: false, msg: '❌ Không tìm thấy dữ liệu khu phố cần điều chỉnh!' };
+      }
+
+      if (typeof payload.dailyParentAllowance === 'number') {
+        targetShared.dailyParentAllowance = Math.max(0, Math.round(payload.dailyParentAllowance));
+      }
+      const changedParents: any[] = [];
+      if (payload.parentPoints) {
+        targetShared.members.forEach((m: any) => {
+          if ((m.role === 'Bố' || m.role === 'Mẹ') && payload.parentPoints![m.id] !== undefined) {
+            m.points = Math.max(0, Math.round(payload.parentPoints![m.id]));
+            m.pointsUpdatedAt = now;
+            m.adminPointsUpdatedAt = now;
+            m.memberUpdatedAt = now;
+            changedParents.push(m);
+          }
+        });
+      }
+      targetShared.updatedAt = now;
+
+      try {
+        const stKey = `b2ks_state_${slug}`;
+        if (localStorage.getItem(stKey)) {
+          localStorage.setItem(stKey, JSON.stringify(targetShared));
+        }
+      } catch {
+        // ignore
+      }
+
+      if (fbUrl) {
+        try {
+          await Promise.all([
+            fetch(`${fbUrl}/${ns}/shared.json`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(targetShared)
+            }),
+            ...changedParents.map((pm) =>
+              fetch(`${fbUrl}/${ns}/member_data/${pm.id}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pm)
+              })
+            ),
+            fetch(`${fbUrl}/b2ks_family_directory/${slug}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                updatedAt: now,
+                dailyParentAllowance: targetShared.dailyParentAllowance ?? DAILY_PARENT_ALLOWANCE,
+                members: targetShared.members.map((m: any) => ({
+                  id: m.id,
+                  name: m.name,
+                  role: m.role,
+                  age: m.age,
+                  outfit: m.outfit || '',
+                  points: m.points
+                }))
+              })
+            })
+          ]);
+        } catch {
+          return { ok: false, msg: '❌ Lỗi đồng bộ điểm Phụ huynh lên Firebase!' };
+        }
+      }
+      return { ok: true, msg: `💰 Đã cập nhật điểm & ngân sách Phụ huynh khu phố "${targetShared.familyName || slug}"!` };
+    },
+    authenticateFamilyLogin: async (familyNameInput: string, passwordInput: string) => {
+      const cleanFamily = String(familyNameInput || 'B2KS').trim() || 'B2KS';
+      const enteredPw = String(passwordInput || '').trim();
+      const targetSlug = normalizeFamilySlug(cleanFamily);
+      const fbUrl = deviceConfig.firebaseUrl;
+      const fbPath = getFamilyFirebaseRoot(cleanFamily);
+
+      const targetStorageKey = targetSlug === 'b2ks' ? LEGACY_STORAGE_KEY : `b2ks_state_${targetSlug}`;
+      const localSavedRaw = localStorage.getItem(targetStorageKey);
+      let localParsedState: any = null;
+      try {
+        if (localSavedRaw) localParsedState = JSON.parse(localSavedRaw);
+      } catch {
+        localParsedState = null;
+      }
+
+      let localSecrets: any = null;
+      try {
+        const secRaw = localStorage.getItem(`b2ks_durable_secrets_v1_${targetSlug}`);
+        if (secRaw) localSecrets = JSON.parse(secRaw);
+      } catch {
+        localSecrets = null;
+      }
+
+      let remoteAuthMeta: any = null;
+      let remoteDir: any = null;
+      let remoteMembersOnly: any = null;
+      if (fbUrl) {
+        try {
+          const [metaRes, dirRes] = await Promise.all([
+            fetch(`${fbUrl}/${fbPath}/auth_meta.json`),
+            fetch(`${fbUrl}/b2ks_family_directory/${targetSlug}.json`)
+          ]);
+          [remoteAuthMeta, remoteDir] = await Promise.all([metaRes.json(), dirRes.json()]);
+          if (!remoteAuthMeta && (!remoteDir || !Array.isArray(remoteDir.members))) {
+            const memRes = await fetch(`${fbUrl}/${fbPath}/shared/members.json`);
+            remoteMembersOnly = await memRes.json();
+          }
+        } catch {
+          // ignore network hiccup; fallback to local existence & secrets
         }
       }
 
+      if (targetSlug !== 'b2ks' && remoteDir && remoteDir.deleted === true) {
+        try {
+          localStorage.removeItem(targetStorageKey);
+          localStorage.removeItem(`b2ks_durable_secrets_v1_${targetSlug}`);
+        } catch {
+          // ignore
+        }
+        AudioEngine.playError();
+        return {
+          ok: false,
+          msg: `❌ Khu phố "${cleanFamily}" đã bị Admin xóa hoặc không tồn tại!`,
+          familyName: cleanFamily
+        };
+      }
+
+      const existsLocally = Boolean(localParsedState || localSecrets);
+      const existsRemotely = Boolean(
+        (remoteAuthMeta && typeof remoteAuthMeta === 'object' && remoteAuthMeta.gamePassword) ||
+        (remoteDir && !remoteDir.deleted && Array.isArray(remoteDir.members) && remoteDir.members.length > 0) ||
+        (Array.isArray(remoteMembersOnly) && remoteMembersOnly.length > 0)
+      );
+
+      if (targetSlug !== 'b2ks' && !existsLocally && !existsRemotely) {
+        AudioEngine.playError();
+        return {
+          ok: false,
+          msg: `❌ Khu phố "${cleanFamily}" chưa tồn tại! Chỉ Admin (Bố B2KS) mới có thể tạo khu phố mới.`,
+          familyName: cleanFamily
+        };
+      }
+
+      // Compute expected gamePassword without touching active state yet
+      let expectedPw = String(localParsedState?.gamePassword || '1111');
+      let expectedPwTs = Number(localParsedState?.gamePasswordUpdatedAt || 0);
+      if (localSecrets && (localSecrets.gamePasswordUpdatedAt || 0) >= expectedPwTs && localSecrets.gamePassword) {
+        expectedPw = String(localSecrets.gamePassword);
+        expectedPwTs = Number(localSecrets.gamePasswordUpdatedAt || 0);
+      }
+      if (remoteAuthMeta && typeof remoteAuthMeta === 'object') {
+        if ((remoteAuthMeta.gamePasswordUpdatedAt || 0) >= expectedPwTs && remoteAuthMeta.gamePassword) {
+          expectedPw = String(remoteAuthMeta.gamePassword);
+        }
+      }
+
+      const displayFamily = String(
+        remoteAuthMeta?.familyName || localSecrets?.familyName || localParsedState?.familyName || cleanFamily
+      );
+
+      if (enteredPw !== expectedPw) {
+        AudioEngine.playError();
+        return {
+          ok: false,
+          msg: `❌ Sai mật khẩu vào khu phố "${displayFamily}"! (Mặc định lần đầu: 1111)`,
+          familyName: displayFamily
+        };
+      }
+
+      // Authenticated! Now load target family state cleanly
+      loadGame(cleanFamily);
       if (remoteAuthMeta && typeof remoteAuthMeta === 'object') {
         if ((remoteAuthMeta.gamePasswordUpdatedAt || 0) >= (state.gamePasswordUpdatedAt || 0) && remoteAuthMeta.gamePassword) {
           state.gamePassword = String(remoteAuthMeta.gamePassword);
@@ -5248,16 +6253,6 @@ export function initB2KSGameEngine() {
         } catch {
           // ignore
         }
-      }
-
-      const expectedPw = String(state.gamePassword || '1111');
-      if (enteredPw !== expectedPw) {
-        AudioEngine.playError();
-        return {
-          ok: false,
-          msg: `❌ Sai mật khẩu vào khu phố "${state.familyName || cleanFamily}"! (Mặc định lần đầu: 1111)`,
-          familyName: state.familyName || cleanFamily
-        };
       }
 
       isGameUnlocked = true;
@@ -5595,8 +6590,9 @@ export function initB2KSGameEngine() {
         });
       }
     } else {
+      const { yShift } = getHouseLayoutMetrics();
       items.push({
-        x: 560, y: 735, radius: 58, label: '🚪 Ra ngoài phố',
+        x: 560, y: 735 + yShift, radius: 58, label: '🚪 Ra ngoài phố',
         action: () => {
           const houseLoc = resolveNeighborhoodLocations(state).find((l) => l.id === 'house');
           const plot = PLOTS[state.house.plotIndex] || PLOTS[1];
@@ -5610,18 +6606,17 @@ export function initB2KSGameEngine() {
           saveGame();
         }
       });
-      items.push({ x: 210, y: 650, radius: 75, label: '📋 Nhiệm vụ', action: () => openSmartphoneModal('tasks') });
-      items.push({ x: 320, y: 615, radius: 68, label: '📺 Bật Tivi YouTube', action: () => openModal('tv-modal') });
+      items.push({ x: 210, y: 650 + yShift, radius: 75, label: '📋 Nhiệm vụ', action: () => openSmartphoneModal('tasks') });
+      items.push({ x: 320, y: 615 + yShift, radius: 68, label: '📺 Bật Tivi YouTube', action: () => openModal('tv-modal') });
       const eatSt = getActivityStatus(me, 'eat');
       items.push({
-        x: 830, y: 665, radius: 80,
+        x: 830, y: 665 + yShift, radius: 80,
         label: eatSt.canEarn ? `🍽️ Ăn cơm & Đố Tiếng Anh (+${eatSt.reward}⭐) [${eatSt.count}/${eatSt.maxPerDay}]` : '🍽️ Ăn cơm & Đố Tiếng Anh',
         action: () => w.openDiningFoodPuzzleModal()
       });
       const f2Common = getHouseRooms().find((r) => r.id === 'f2_common');
-      const commonOwned = Boolean(f2Common && f2Common.ownerIds && f2Common.ownerIds.length > 0);
-      const bookX = commonOwned ? 195 : 225;
-      const bookY = commonOwned ? 640 : 455;
+      const bookX = 225;
+      const bookY = f2Common ? f2Common.y + 115 : 455 + yShift;
       const readCfg = getActivityConfig('read_comic');
       items.push({
         x: bookX,
@@ -5661,6 +6656,7 @@ export function initB2KSGameEngine() {
 
   /* ==================== 19. LOAD & PERIODIC CLOUD SYNC ==================== */
   function loadGame(overrideFamilyName?: string) {
+    loadSharedEnglishBank();
     const famName = (overrideFamilyName ?? localStorage.getItem(LAST_FAMILY_KEY) ?? deviceConfig.lastFamilyName ?? 'B2KS').trim() || 'B2KS';
     state = createFreshDefaultState(famName);
     hasHydratedRemote = false;
@@ -5677,7 +6673,9 @@ export function initB2KSGameEngine() {
         if (parsed && typeof parsed === 'object') {
           if (!Array.isArray(parsed.members) || parsed.members.length === 0) delete parsed.members;
           if (!parsed.house || typeof parsed.house !== 'object') delete parsed.house;
+          delete parsed.englishQuestions;
           state = { ...state, ...parsed };
+          state.englishQuestions = globalEnglishBank;
           const parsedPinTs = parsed.parentPinUpdatedAt || 0;
           if (localPin && localPin.length >= 4 && localPinTs >= parsedPinTs) {
             state.parentPin = localPin;
@@ -5859,7 +6857,9 @@ export function initB2KSGameEngine() {
           const localActCfgTs = state.activityConfigsUpdatedAt || 0;
           const prevUnread = getUnreadMessageCount(getCurrentUser());
 
-          state = { ...state, ...remote };
+          const { englishQuestions: _ignoreRemoteEq, ...remoteRest } = remote;
+          state = { ...state, ...remoteRest };
+          state.englishQuestions = globalEnglishBank;
           state.currentUserId = curId;
           ensureStateArrays();
 
@@ -5902,6 +6902,7 @@ export function initB2KSGameEngine() {
             const mergedAcc = mergeAccessoryLists(lm.petAccessories, rm.petAccessories);
             const mergedZoo = unionStringLists(lm.unlockedZooAnimals, rm.unlockedZooAnimals);
             const mergedQuiz = mergeQuizHistory(lm.englishQuizHistory, rm.englishQuizHistory);
+            const mergedEngProg = mergeEnglishProgressMaps(lm.englishProgress, rm.englishProgress);
             const mergedComics = unionStringLists(
               lm.comicReadStats?.completedIds || [],
               rm.comicReadStats?.completedIds || []
@@ -5924,6 +6925,7 @@ export function initB2KSGameEngine() {
               rm.petAccessories = mergedAcc;
               rm.unlockedZooAnimals = mergedZoo;
               rm.englishQuizHistory = mergedQuiz;
+              rm.englishProgress = mergedEngProg;
               rm.customLabItems = mergedLab;
               rm.inventory = mergedInv;
               if (rm.comicReadStats) rm.comicReadStats.completedIds = mergedComics;
@@ -5967,6 +6969,7 @@ export function initB2KSGameEngine() {
                 petAccessories: mergedAcc,
                 unlockedZooAnimals: mergedZoo,
                 englishQuizHistory: mergedQuiz,
+                englishProgress: mergedEngProg,
                 customLabItems: mergedLab,
                 inventory: mergedInv
               };
@@ -5980,6 +6983,7 @@ export function initB2KSGameEngine() {
               rm.petAccessories = mergedAcc;
               rm.unlockedZooAnimals = mergedZoo;
               rm.englishQuizHistory = mergedQuiz;
+              rm.englishProgress = mergedEngProg;
               rm.customLabItems = mergedLab;
               rm.inventory = mergedInv;
               if (rm.comicReadStats) rm.comicReadStats.completedIds = mergedComics;
@@ -5993,7 +6997,8 @@ export function initB2KSGameEngine() {
           });
 
           snapshotSavedPointsMap();
-          localStorage.setItem(getFamilyStorageKey(), JSON.stringify(state));
+          const { englishQuestions: _omitSavedEq, ...localStatePayload } = state;
+          localStorage.setItem(getFamilyStorageKey(), JSON.stringify(localStatePayload));
           persistPointsLedger();
           persistDurableSecrets();
           persistDurableMemberArchive();
@@ -6033,6 +7038,11 @@ export function initB2KSGameEngine() {
             m.unlockedZooAnimals = mergedZoo;
             changed = true;
           }
+          const mergedEngProg = mergeEnglishProgressMaps(m.englishProgress, remoteM.englishProgress);
+          if (JSON.stringify(mergedEngProg) !== JSON.stringify(m.englishProgress)) {
+            m.englishProgress = mergedEngProg;
+            changed = true;
+          }
           const mergedLab = mergeCustomLabItems(m.customLabItems, remoteM.customLabItems);
           if (mergedLab.length !== (m.customLabItems || []).length) {
             m.customLabItems = mergedLab;
@@ -6068,7 +7078,8 @@ export function initB2KSGameEngine() {
         });
         if (changed) {
           snapshotSavedPointsMap();
-          localStorage.setItem(getFamilyStorageKey(), JSON.stringify(state));
+          const { englishQuestions: _omitMemberSyncEq, ...localPayload2 } = state;
+          localStorage.setItem(getFamilyStorageKey(), JSON.stringify(localPayload2));
           persistPointsLedger();
           persistDurableMemberArchive();
           updateHUD();
@@ -6077,14 +7088,31 @@ export function initB2KSGameEngine() {
       })
       .catch(() => {});
 
-    fetch(`${deviceConfig.firebaseUrl}/${fbBase}/english_questions.json`)
-      .then((r) => r.json())
-      .then((eqRemote) => {
-        if (Array.isArray(eqRemote) && eqRemote.length > 0) {
-          state.englishQuestions = eqRemote;
-        }
-      })
-      .catch(() => {});
+    // Pull shared global English bank metadata only when changed (saves bandwidth on 1,920-question bank)
+    const nowMetaCheck = Date.now();
+    if (nowMetaCheck - lastSharedEnglishMetaCheckAt >= 15000) {
+      lastSharedEnglishMetaCheckAt = nowMetaCheck;
+      fetch(`${deviceConfig.firebaseUrl}/b2ks_shared_english_bank_meta.json`)
+        .then((r) => r.json())
+        .then((meta) => {
+          if (
+            meta &&
+            Number(meta.version) >= CURRICULUM_BANK_VERSION &&
+            Number(meta.updatedAt || 0) > sharedEnglishBankUpdatedAt
+          ) {
+            fetch(`${deviceConfig.firebaseUrl}/b2ks_shared_english_bank.json`)
+              .then((r2) => r2.json())
+              .then((fullBank) => {
+                if (fullBank && Array.isArray(fullBank.questions) && fullBank.questions.length > 0) {
+                  saveSharedEnglishBank(fullBank.questions, Number(fullBank.updatedAt) || Date.now(), false);
+                  notifySubscribers();
+                }
+              })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
 
     fetch(`${deviceConfig.firebaseUrl}/${fbBase}/live_pos.json`)
       .then((r) => r.json())
@@ -6171,10 +7199,42 @@ export function initB2KSGameEngine() {
   });
 
   const memberMoveState = new Map<string, { x: number; y: number; scene: string; movingUntil: number }>();
+  let lastGameLoopPerf = performance.now();
+  let lastPetHungerSaveAt = 0;
 
   function gameLoop() {
+    const nowPerf = performance.now();
+    const deltaSec = Math.max(0, Math.min(2, (nowPerf - lastGameLoopPerf) / 1000));
+    lastGameLoopPerf = nowPerf;
+
     const me = getCurrentUser();
     const lighting = getRealTimeLighting();
+
+    // Gentle hunger decay ONLY when accompanying an unlocked user with a hatched companion pet
+    if (isGameUnlocked && me.activePetId && me.activePetId !== 'none' && Array.isArray(me.pets)) {
+      const compPet = me.pets.find((p) => p.id === me.activePetId && p.hatched);
+      if (compPet && compPet.hunger > 0) {
+        const sp = getPetSpecies(compPet.speciesId);
+        const prevH = compPet.hunger;
+        compPet.hunger = Math.max(0, prevH - (sp.hungerDecayPerMin / 60) * deltaSec);
+        const nowHungerTs = Date.now();
+        if (prevH > 0 && compPet.hunger <= 0) {
+          showToast(`⚠️ ${compPet.nickname} đã đói bụng (0%)! Hãy cho ăn để khôi phục +Tốc độ & +Sao thưởng!`);
+          saveGame(true);
+          lastPetHungerSaveAt = nowHungerTs;
+        } else if (nowHungerTs - lastPetHungerSaveAt >= 30000) {
+          lastPetHungerSaveAt = nowHungerTs;
+          persistDurableMemberArchive();
+          const { englishQuestions: _omitH, ...hPayload } = state;
+          try {
+            localStorage.setItem(getFamilyStorageKey(), JSON.stringify(hPayload));
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+
     const myPetBonus = getMemberPetBonuses(me);
     const speed = 3.6 + myPetBonus.speedBonus;
     let dx = 0;
@@ -6213,7 +7273,11 @@ export function initB2KSGameEngine() {
         } else if (check.blockedRoom && Date.now() - lastDoorToastTime > 2200) {
           lastDoorToastTime = Date.now();
           AudioEngine.playError();
-          showToast(`🔒 ${check.blockedRoom.name} đang khóa! Chủ phòng cần mở khóa cửa trước.`);
+          showToast(
+            check.blockedRoom.isDisabled
+              ? `🚫 ${check.blockedRoom.name} chưa có thành viên sử dụng!`
+              : `🔒 ${check.blockedRoom.name} đang khóa! Chủ phòng cần mở khóa cửa trước.`
+          );
         }
       }
     }
@@ -6254,7 +7318,7 @@ export function initB2KSGameEngine() {
     }
 
     const worldW = me.scene === 'neighborhood' ? STREET_WORLD.width : me.scene === 'private_room' ? PRIVATE_ROOM_WORLD.width : HOUSE_WORLD.width;
-    const worldH = me.scene === 'neighborhood' ? STREET_WORLD.height : me.scene === 'private_room' ? PRIVATE_ROOM_WORLD.height : HOUSE_WORLD.height;
+    const worldH = me.scene === 'neighborhood' ? STREET_WORLD.height : me.scene === 'private_room' ? PRIVATE_ROOM_WORLD.height : getHouseLayoutMetrics().houseHeight;
     const effW = canvas.width / zoomLevel;
     const effH = canvas.height / zoomLevel;
     const topSafePad = 140 / zoomLevel;

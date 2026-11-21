@@ -94,7 +94,7 @@ export const GamePasswordGate: React.FC<Props> = ({ bridge, onUnlocked }) => {
               className="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#2C3E50] bg-white text-sm font-bold text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
             <p className="text-[11px] text-slate-500 leading-snug">
-              Mặc định của gia đình hiện tại là <strong>B2KS</strong>. Gia đình khác nhập tên riêng sẽ tạo không gian tách biệt.
+              Mặc định của gia đình hiện tại là <strong>B2KS</strong>. Chỉ Admin (Bố B2KS) mới có quyền tạo khu phố mới; nhập tên chưa tồn tại sẽ không vào được game.
             </p>
           </div>
 

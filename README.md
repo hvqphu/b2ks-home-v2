@@ -6,32 +6,36 @@ Webgame nhập vai (RPG) dành cho gia đình (Bố, Mẹ và các con) kết h�
 
 ## 1. Tính năng nổi bật
 
-- **Cổng đăng nhập theo Tên Gia Đình & Mật Khẩu riêng**:
+- **Cổng đăng nhập theo Tên Gia Đình & Mật Khẩu riêng (Bảo mật tạo khu phố)**:
   - Mỗi gia đình đăng nhập bằng **Tên gia đình** (mặc định: `B2KS`) và **Mật khẩu vào khu phố** (mặc định lần đầu: **`1111`**).
+  - Cổng đăng nhập chỉ cho phép vào các **khu phố đã được cấp phép**; người chơi không thể tự tạo khu phố mới tùy tiện từ màn hình đăng nhập.
   - Sau khi đăng nhập, game tự hiển thị gợi ý vị trí nút **❓ Hướng dẫn** để người chơi mới dễ tra cứu.
-- **Khu phố tương tác & Ngôi nhà 3 tầng**:
+- **Khu phố tương tác & Ngôi nhà mở rộng linh hoạt theo số con**:
   - Di chuyển tự do bằng bàn phím (`W A S D` / Mũi tên) hoặc **Joystick** cảm ứng trên điện thoại.
-  - Ngôi nhà 3 tầng với phòng sinh hoạt chung, bàn ăn đố vui Tiếng Anh, tivi YouTube, **Tủ sách Truyện Tranh Tiếng Anh** (lật trang, phóng to/thu nhỏ, thưởng sao khi đọc xong) và **phòng riêng** cho từng thành viên (khóa/mở cửa, đặt vật phẩm trang trí vào các ô trưng bày).
+  - Ngôi nhà gia đình có phòng sinh hoạt chung, bàn ăn đố vui Tiếng Anh, tivi YouTube, **Tủ sách Truyện Tranh Tiếng Anh** (lật trang, phóng to/thu nhỏ, thưởng sao + buff thú cưng khi đọc xong) và **phòng riêng** cho từng thành viên (khóa/mở cửa, trưng bày vật phẩm).
+  - **Tự động co giãn số tầng & phòng ngủ**: Gia đình mới khởi tạo với **Bố & Mẹ** sẽ khóa 2 phòng ngủ tầng 3; có **1 bé** sẽ khóa 1 phòng còn lại; có **2 bé** mở đủ 3 tầng; có từ **3 bé trở lên** nhà tự động nâng thêm tầng trên.
   - **Minimap & Chỉ đường GPS** trên Điện thoại cá nhân.
   - **Thời tiết thực tế ngoài đời**: Tự động cập nhật thời tiết khu vực (nắng, mây, mưa, dông, sương mù, tuyết) phản ánh lên bầu trời và hiệu ứng trong game.
 - **Hệ thống Nhiệm vụ & Đổi quà thực tế**:
   - Phụ huynh giao việc nhà, bài tập học tập (hỗ trợ đính kèm đề bài & chấm điểm), hoặc **Nhiệm vụ Đồng đội**.
   - **Trung tâm Giao dịch Xuyên Thế Giới**: Các bé đổi điểm sao (`⭐`) lấy tiền mặt/đặc quyền ngoài đời thực và gửi yêu cầu chờ Phụ Huynh duyệt.
-- **Học Tiếng Anh & Sáng tạo**:
-  - **English Academy** (trắc nghiệm từ vựng/ngữ pháp chuẩn lớp 6 có phát âm tự động).
-  - **Sở Thú Ảo**: Mở khóa động vật, chạm từng từ Tiếng Anh để nghe phát âm và dịch nghĩa tức thì.
-  - **Phòng Thí Nghiệm Sáng Tạo (Pro Lab v2)**: Nhập mô tả Tiếng Anh hoặc hợp nhất 2 vật phẩm thành vật phẩm độc bản nhiều chi tiết và kích thước để trưng bày trong phòng riêng.
+- **Trung Tâm Tiếng Anh (Chuẩn Bộ GD&ĐT Global Success Lớp 6–9)**:
+  - Ngân hàng **1.920 câu hỏi** đầy đủ **4 khối lớp (Lớp 6, 7, 8, 9) × 12 Unit × (20 Từ vựng + 20 Ngữ pháp)** có phát âm tự động.
+  - Mỗi lượt thi rút ngẫu nhiên **10 câu (5 Từ vựng + 5 Ngữ pháp)** thuộc Unit hiện tại của bé ở lớp đang chọn.
+  - **Thăng cấp Unit theo chuỗi**: Đạt **> 8 điểm (9 hoặc 10/10) liên tiếp 3 lần** tại một Unit sẽ tự động mở khóa lên **Unit kế tiếp**; nếu `<= 8` điểm chuỗi sẽ về `0`.
+  - **Sở Thú Ảo** & **Phòng Thí Nghiệm Sáng Tạo (Pro Lab v2)**: Mở khóa động vật phát âm Tiếng Anh và sáng tạo vật phẩm độc bản trưng bày trong phòng riêng.
+- **Thú Cưng Đồng Hành & Cơ chế Độ No / Buff Sao**:
+  - **10 loài × 5 giai đoạn tiến hóa**: Đổi trứng, ấp nở ngẫu nhiên giới tính (`♂️/♀️`) & 5 biến thể màu hiếm, đặt tên, đeo **Phụ kiện** và dẫn đi dạo ngoài khu phố (thú cưng tự xoay hướng theo hướng di chuyển của chủ).
+  - **Cơ chế Độ No & Thưởng**: Khi dắt thú cưng đi cùng ngoài bản đồ, Độ No giảm nhẹ theo từng loài. Chỉ khi **đang dắt đi cùng** và **Độ No > 0%**, thú cưng mới kích hoạt **buff tăng tốc độ di chuyển** và **cộng thêm sao thưởng** (khi làm việc nhà, chấm bài tập, hoàn thành nhiệm vụ đồng đội, đọc xong truyện tranh). Nếu Độ No về `0%`, thú cưng hiện cảnh báo **❗ ĐÓI!** và tạm tắt toàn bộ buff cho tới khi được cho ăn.
 - **Giải trí & Xã hội gia đình**:
-  - **Hệ thống Thú Cưng Đồng Hành (10 loài × 5 giai đoạn tiến hóa)**: Đổi trứng, ấp nở ngẫu nhiên giới tính (`♂️/♀️`) & 5 biến thể màu hiếm (`Cơ bản`, `Pastel`, `Hoàng gia`, `Vũ trụ`, `Hoàng kim`), đặt tên, cho ăn, đeo **Phụ kiện** (nơ, chuông, kính râm, khăn, mũ phù thủy, vương miện) và chạy theo nhân vật để tăng tốc độ & sao thưởng.
-  - **Sân Bóng Đá (Miễn phí 0⭐)**: Hỗ trợ đấu 1 người (vs AI), đấu **2 người Online 1v1**, và **chế độ Khán giả xem trực tiếp**.
-  - **Khu Arcade Online**, **Siêu Thị**, **Fashion Boutique** (áo riêng/quần riêng/thử đồ trên gương), **Salon Tóc**, **Chợ Trời gia đình**, và **Điện thoại Smartphone** (Messenger gia đình có highlight tin nhắn chưa đọc, Bản đồ, Nhiệm vụ).
-- **Bảng Điều Khiển Phụ Huynh & Mini Window**:
-  - Mở bằng nút **📊 Phụ Huynh** (Passcode mặc định: **`1234`**).
-  - **Quản lý Tên gia đình & 2 Mật khẩu**: Hiển thị rõ cả *Mật khẩu vào Khu Phố* và *Passcode Phụ Huynh* (tránh quên), hỗ trợ đổi độc lập từng mật khẩu.
-  - **Chỉnh Tên & Tuổi thành viên**, **Kéo thả vị trí các building trên bản đồ** và chọn **4 kiểu kiến trúc công trình**.
-  - **Tùy chỉnh Hoạt động & Điểm thưởng** (bật/tắt, đổi điểm thưởng, giãn cách, điều chỉnh điểm cộng/trừ phạt cho từng bé).
-  - **Chọn 5 chủ đề Nhạc nền**, **Sổ Tay Thú Cưng**, **Biểu đồ tuần**, **Nhật ký chống bấm nhanh < 60s**, và **Xuất File ZIP GitHub**.
-  - **🪟 Thu nhỏ (Mini Window Always-On-Top)**: Cửa sổ siêu gọn hiển thị trạng thái **🟢 Online / ⚫ Offline** của từng thành viên và lọc riêng thông báo/hoạt động của các con.
+  - **Sân Bóng Đá (Miễn phí 0⭐)** (vs AI, 1v1 Online, Khán giả), **Khu Arcade Online**, **Siêu Thị**, **Fashion Boutique**, **Salon Tóc**, **Chợ Trời gia đình**, và **Điện thoại Smartphone**.
+- **Bảng Điều Khiển Phụ Huynh, Công Cụ Admin & Mini Window**:
+  - Mở bảng Phụ Huynh bằng nút **📊 Phụ Huynh** (Passcode mặc định: **`1234`**).
+  - **Quản lý Tên gia đình, 2 Mật khẩu & Thành viên**: Hiển thị rõ cả *Mật khẩu vào Khu Phố* và *Passcode Phụ Huynh*, thêm/bớt/sửa tên & tuổi thành viên, kéo thả vị trí công trình và chọn **4 kiểu kiến trúc công trình**, chọn 5 chủ đề Nhạc nền, xem tiến độ Lớp/Unit Tiếng Anh của từng bé, quản lý **Ngân Hàng Tiếng Anh dùng chung (Xuất/Nhập CSV UTF-8 BOM)**, xem Sổ tay thú cưng và Xuất File ZIP GitHub. *(Riêng tab tùy chỉnh "Hoạt động & điểm" chỉ hiển thị cho Phụ Huynh khu phố `B2KS` để bảo đảm công bằng giữa các khu phố).*
+  - **🛠️ Công cụ Admin (Dành riêng cho Nhân vật Bố của khu phố B2KS trong thanh công cụ mở rộng `>`)**:
+    - **Quản lý các khu phố**: Xem danh sách toàn bộ khu phố, tạo khu phố mới (mặc định có Bố & Mẹ), xóa khu phố (trừ `B2KS`), và reset cả 2 mật khẩu của bất kỳ khu phố nào về mặc định (`1111` / `1234`).
+    - **Điều chỉnh điểm Phụ huynh**: Xem và điều chỉnh **điểm sao hiện có** cũng như **điểm nhận hằng ngày** của Bố/Mẹ ở tất cả các khu phố.
+  - **🪟 Thu nhỏ (Mini Window Always-On-Top)**: Cửa sổ siêu gọn hiển thị trạng thái **🟢 Online / ⚫ Offline** và lọc riêng hoạt động của các con.
 
 ---
 
@@ -39,25 +43,26 @@ Webgame nhập vai (RPG) dành cho gia đình (Bố, Mẹ và các con) kết h�
 
 | Hạng mục | Giá trị mặc định | Nơi thay đổi |
 | :--- | :--- | :--- |
-| **Tên gia đình** | `B2KS` | **📊 Phụ Huynh → Gia Đình & Bản Đồ** |
-| **Mật khẩu vào khu phố** *(Dùng chung cả nhà)* | `1111` | **📊 Phụ Huynh → Gia Đình & Bản Đồ** |
+| **Tên gia đình chính** | `B2KS` | **📊 Phụ Huynh → Gia Đình & Bản Đồ** |
+| **Mật khẩu vào khu phố** *(Dùng chung cả nhà)* | `1111` | **📊 Phụ Huynh → Gia Đình & Bản Đồ** (hoặc Admin reset) |
 | **Passcode Phụ Huynh** *(Khóa bảng Phụ Huynh & đổi người)* | `1234` | **📊 Phụ Huynh → Gia Đình & Bản Đồ** hoặc **🔗 Gia đình & PIN** |
 
 > Lưu ý: Hệ thống không cho phép đặt *Mật khẩu vào khu phố* trùng với *Passcode Phụ Huynh* để bảo đảm trẻ em không dùng mật khẩu vào game để mở quyền Phụ Huynh.
 
 ---
 
-## 3. Hướng dẫn chia sẻ cho gia đình khác
+## 3. Hướng dẫn tạo & chia sẻ cho gia đình khác
 
-Game không có tính năng giao lưu qua lại giữa các gia đình khác nhau, giúp mỗi gia đình chơi độc lập và an toàn. Bạn có **2 cách chia sẻ**:
+Game tách biệt dữ liệu từng khu phố (không giao lưu giữa các khu phố với nhau, ngoại trừ **Ngân hàng câu hỏi Tiếng Anh** dùng chung), giúp mỗi gia đình chơi độc lập và an toàn.
 
-### Cách 1: Chia sẻ thẳng link web đang chạy *(Nhanh nhất)*
-1. Gửi link GitHub Pages / Web App của bạn cho gia đình khác.
-2. Ở màn hình đăng nhập ban đầu, gia đình kia nhập **Tên gia đình riêng của họ** (ví dụ: `MinhAn`, `GiaDinhTiti` — *khác `B2KS`*) và mật khẩu mặc định **`1111`**.
-3. Game tự động tạo khu phố tách biệt (toàn bộ bảng hiệu công trình, bản đồ, lưu trữ cục bộ và nhánh Firebase đều tách riêng theo tên gia đình đó).
-4. Phụ huynh nhà họ mở **📊 Phụ Huynh** (PIN **`1234`**) → **Gia Đình & Bản Đồ** để đổi lại Mật khẩu vào game, Passcode Phụ Huynh, và cập nhật Tên/Tuổi các thành viên cho gia đình mình.
-
-> Lưu ý: Nếu dùng Cách 1, các gia đình vẫn lưu chung trên cùng một Firebase Realtime Database mặc định (tuy tách nhánh riêng và không nhìn thấy nhau, nhưng dùng chung hạn mức miễn phí của tài khoản Firebase chủ).
+### Cách 1: Cấp khu phố mới trực tiếp qua Công cụ Admin *(Khuyên dùng)*
+1. Đăng nhập vào khu phố **`B2KS`** bằng nhân vật **Bố** (`Dad`).
+2. Mở rộng thanh công cụ bằng nút **`>`** → chọn **🛠️ Admin**.
+3. Tại tab **Quản lý các khu phố**, nhập tên khu phố mới (ví dụ: `MinhAn`, `GiaDinhTiti`) rồi bấm **Tạo khu phố**.
+4. Gửi link web đang chạy + **Tên khu phố mới** + mật khẩu vào game mặc định (**`1111`**) cho gia đình đó.
+5. Khi gia đình mới đăng nhập lần đầu, nhà sẽ có sẵn **Bố & Mẹ**. Phụ huynh nhà họ mở **📊 Phụ Huynh** (PIN **`1234`**) để:
+   - Thêm các thành viên con của nhà mình (ngôi nhà tự động mở tầng/phòng tương ứng).
+   - Đổi lại Mật khẩu vào game, Passcode Phụ Huynh và sắp xếp bản đồ khu phố riêng.
 
 ### Cách 2: Chia sẻ trọn bộ File ZIP để tự host riêng *(Riêng tư 100%)*
 1. Vào **📊 Phụ Huynh → Nhật Ký & Xuất ZIP → Tải File ZIP GitHub** để tải `b2ks-daily-routines-github.zip`.
@@ -98,8 +103,10 @@ Game không có tính năng giao lưu qua lại giữa các gia đình khác nha
 
 ### Các nhánh dữ liệu tự động trên Firebase
 - Gia đình `B2KS`: `/b2ks_family_rpg_v16/`
-- Gia đình tên khác (ví dụ `MinhAn`): `/b2ks_family_ns_minhan/`
-- Bao gồm các nút: `shared.json`, `auth_meta.json`, `member_data/`, `live_pos/`, `cross_world_requests.json`, `flea_market.json`, `english_questions.json`, `activity_logs.json`, `arcade_room.json`, `soccer_room.json`.
+- Gia đình tên khác (ví dụ `MinhAn`): `/b2ks_family_ns_minhan/` *(dữ liệu tách riêng từng gia đình)*
+- Danh bạ khu phố Admin: `/b2ks_family_directory/`
+- Ngân hàng Tiếng Anh dùng chung (Global Success Lớp 6–9): `/b2ks_shared_english_bank.json` & `/b2ks_shared_english_bank_meta.json`
+- Các nút trong từng khu phố: `shared.json`, `auth_meta.json`, `member_data/`, `live_pos/`, `cross_world_requests.json`, `flea_market.json`, `activity_logs.json`, `arcade_room.json`, `soccer_room.json`.
 
 ---
 
@@ -117,7 +124,7 @@ npm run dev
 # Kiểm tra kiểu dữ liệu TypeScript
 npm run lint
 
-# Build bản sản phẩm tĩnh vào thư mục dist/
+# Build bản sản phẩm tĩnh vào thư mục dist/ và đồng bộ docs/
 npm run build
 ```
 

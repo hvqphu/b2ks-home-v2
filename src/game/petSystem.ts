@@ -98,10 +98,11 @@ export function getMemberPetBonuses(member: Member | null | undefined): {
   stageTitle: string;
   speedBonus: number;
   starBonus: number;
+  isHungry: boolean;
 } {
   const pet = getActivePet(member);
   if (!pet) {
-    return { pet: null, species: null, stageTitle: '', speedBonus: 0, starBonus: 0 };
+    return { pet: null, species: null, stageTitle: '', speedBonus: 0, starBonus: 0, isHungry: false };
   }
   const species = getPetSpecies(pet.speciesId);
   const stageDef = species.stages.find((s) => s.stage === pet.stage) || species.stages[0];
@@ -111,15 +112,18 @@ export function getMemberPetBonuses(member: Member | null | undefined): {
       species,
       stageTitle: `${stageDef.title} (${Math.round(pet.hatchProgress)}%)`,
       speedBonus: 0,
-      starBonus: 0
+      starBonus: 0,
+      isHungry: false
     };
   }
+  const isHungry = Math.round(pet.hunger ?? 100) <= 0;
   return {
     pet,
     species,
-    stageTitle: stageDef.title,
-    speedBonus: stageDef.speedBonus,
-    starBonus: stageDef.starBonus
+    stageTitle: isHungry ? `${stageDef.title} (❗ Đói)` : stageDef.title,
+    speedBonus: isHungry ? 0 : stageDef.speedBonus,
+    starBonus: isHungry ? 0 : stageDef.starBonus,
+    isHungry
   };
 }
 
@@ -563,6 +567,17 @@ export function drawCompanionPetOnContext(
   const py = owner.y + oy;
   const bounce = isMoving ? Math.abs(Math.sin(t / 110)) * 5.8 : Math.sin(t / 320) * 1.9;
   const scale = stageDef.scale * 0.78;
+  const isRightBaseSpecies = sp.id === 'pet_corgi' || sp.id === 'pet_unicorn';
+  const flipX =
+    dir === 'left'
+      ? (isRightBaseSpecies ? -1 : 1)
+      : dir === 'right'
+        ? (isRightBaseSpecies ? 1 : -1)
+        : 1;
+  const faceShiftX =
+    dir === 'left' || dir === 'right'
+      ? (isRightBaseSpecies ? 2.2 : -2.8)
+      : 0;
 
   ctx.save();
   ctx.translate(px, py);
@@ -573,7 +588,7 @@ export function drawCompanionPetOnContext(
   ctx.fill();
 
   ctx.translate(0, -bounce);
-  ctx.scale(scale, scale);
+  ctx.scale(scale * flipX, scale);
 
   if (!pet.hatched) {
     const wobble = Math.sin(t / 240) * 0.09;
@@ -730,9 +745,9 @@ export function drawCompanionPetOnContext(
     }
   }
 
-  // Head & Ears
-  const headX = sp.id === 'pet_corgi' || sp.id === 'pet_unicorn' ? 6 : 0;
-  const headY = sp.id === 'pet_owl' || sp.id === 'pet_penguin' ? -15 : -14;
+  // Head & Ears (shifted along travel direction so every species visibly turns!)
+  const headX = (isRightBaseSpecies ? 6 : 0) + faceShiftX;
+  const headY = (sp.id === 'pet_owl' || sp.id === 'pet_penguin' ? -15 : -14) + (dir === 'up' ? -1.5 : 0);
 
   // Ears
   if (sp.id === 'pet_bunny') {
@@ -772,45 +787,49 @@ export function drawCompanionPetOnContext(
   }
 
   // Face details
+  const gazeShift = dir === 'left' || dir === 'right' ? (isRightBaseSpecies ? 1.8 : -1.8) : 0;
   if (sp.id === 'pet_panda') {
     ctx.fillStyle = '#0F172A';
-    ctx.beginPath(); ctx.ellipse(headX - 5, headY - 1, 3.6, 4.4, -0.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(headX + 5, headY - 1, 3.6, 4.4, 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(headX + gazeShift - 5, headY - 1, 3.6, 4.4, -0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(headX + gazeShift + 5, headY - 1, 3.6, 4.4, 0.2, 0, Math.PI * 2); ctx.fill();
   } else if (sp.id === 'pet_owl' || sp.id === 'pet_penguin') {
     ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath(); ctx.arc(headX - 5, headY - 1, 5.2, 0, Math.PI * 2); ctx.arc(headX + 5, headY - 1, 5.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(headX + gazeShift - 5, headY - 1, 5.2, 0, Math.PI * 2); ctx.arc(headX + gazeShift + 5, headY - 1, 5.2, 0, Math.PI * 2); ctx.fill();
     if (sp.id === 'pet_owl') {
       ctx.strokeStyle = '#2C3E50'; ctx.lineWidth = 1.5; ctx.stroke();
     }
   }
 
-  // Eyes
-  ctx.fillStyle = sp.id === 'pet_panda' ? '#FFFFFF' : '#1E293B';
-  ctx.beginPath();
-  ctx.arc(headX - 4.8, headY - 1, 2.3, 0, Math.PI * 2);
-  ctx.arc(headX + 4.8, headY - 1, 2.3, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = sp.id === 'pet_panda' ? '#0F172A' : '#FFFFFF';
-  ctx.beginPath();
-  ctx.arc(headX - 4, headY - 1.8, 0.9, 0, Math.PI * 2);
-  ctx.arc(headX + 5.6, headY - 1.8, 0.9, 0, Math.PI * 2);
-  ctx.fill();
+  // Eyes (when facing UP, hide eyes slightly like back-of-head for realistic depth)
+  if (dir !== 'up') {
+    ctx.fillStyle = sp.id === 'pet_panda' ? '#FFFFFF' : '#1E293B';
+    ctx.beginPath();
+    ctx.arc(headX + gazeShift - 4.8, headY - 1, 2.3, 0, Math.PI * 2);
+    ctx.arc(headX + gazeShift + 4.8, headY - 1, 2.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = sp.id === 'pet_panda' ? '#0F172A' : '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(headX + gazeShift - 4, headY - 1.8, 0.9, 0, Math.PI * 2);
+    ctx.arc(headX + gazeShift + 5.6, headY - 1.8, 0.9, 0, Math.PI * 2);
+    ctx.fill();
 
-  // Muzzle / Beak
-  if (sp.id === 'pet_owl' || sp.id === 'pet_penguin' || sp.id === 'pet_phoenix') {
-    ctx.fillStyle = '#F59E0B';
-    ctx.beginPath();
-    ctx.moveTo(headX, headY + 5); ctx.lineTo(headX - 3.2, headY + 1); ctx.lineTo(headX + 3.2, headY + 1); ctx.closePath();
-    ctx.fill();
-  } else {
-    ctx.fillStyle = sp.id === 'pet_dragon' || sp.id === 'pet_unicorn' ? '#FDE68A' : '#FFFFFF';
-    ctx.beginPath();
-    ctx.ellipse(headX, headY + 5, 5.5, 3.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#1E293B';
-    ctx.beginPath();
-    ctx.arc(headX, headY + 4, 1.6, 0, Math.PI * 2);
-    ctx.fill();
+    // Muzzle / Beak
+    const snoutX = headX + gazeShift * 1.2;
+    if (sp.id === 'pet_owl' || sp.id === 'pet_penguin' || sp.id === 'pet_phoenix') {
+      ctx.fillStyle = '#F59E0B';
+      ctx.beginPath();
+      ctx.moveTo(snoutX, headY + 5); ctx.lineTo(snoutX - 3.2, headY + 1); ctx.lineTo(snoutX + 3.2, headY + 1); ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.fillStyle = sp.id === 'pet_dragon' || sp.id === 'pet_unicorn' ? '#FDE68A' : '#FFFFFF';
+      ctx.beginPath();
+      ctx.ellipse(snoutX, headY + 5, 5.5, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1E293B';
+      ctx.beginPath();
+      ctx.arc(snoutX, headY + 4, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // Accessories & Stage crown
@@ -824,10 +843,10 @@ export function drawCompanionPetOnContext(
       ctx.fillStyle = '#FACC15'; ctx.beginPath(); ctx.arc(headX, headY + 15, 3, 0, Math.PI * 2); ctx.fill();
     }
   }
-  if (pet.accessoryId === 'pacc_glasses') {
+  if (pet.accessoryId === 'pacc_glasses' && dir !== 'up') {
     ctx.fillStyle = '#0F172A'; ctx.strokeStyle = '#FACC15'; ctx.lineWidth = 1.4;
-    ctx.fillRect(headX - 9, headY - 4, 7, 5); ctx.strokeRect(headX - 9, headY - 4, 7, 5);
-    ctx.fillRect(headX + 2, headY - 4, 7, 5); ctx.strokeRect(headX + 2, headY - 4, 7, 5);
+    ctx.fillRect(headX + gazeShift - 9, headY - 4, 7, 5); ctx.strokeRect(headX + gazeShift - 9, headY - 4, 7, 5);
+    ctx.fillRect(headX + gazeShift + 2, headY - 4, 7, 5); ctx.strokeRect(headX + gazeShift + 2, headY - 4, 7, 5);
   }
   if (pet.accessoryId === 'pacc_bow') {
     ctx.fillStyle = '#EC4899';
@@ -848,20 +867,36 @@ export function drawCompanionPetOnContext(
   ctx.restore();
 
   ctx.save();
+  const isHungry = Math.round(pet.hunger ?? 100) <= 0;
   const genderSymbol = pet.gender === 'female' ? '♀' : pet.gender === 'male' ? '♂' : '';
   const stageShort = `GĐ${pet.stage}`;
   const tagText = `${genderSymbol ? `${genderSymbol} ` : ''}${pet.nickname} ${stageShort} Lv.${pet.level}`;
   ctx.font = 'bold 8.5px Fredoka, sans-serif';
   ctx.textAlign = 'center';
   const tw = Math.max(44, ctx.measureText(tagText).width + 10);
+  const tagY = py - 34 * scale - 12;
   ctx.fillStyle = 'rgba(255,255,255,0.94)';
-  ctx.strokeStyle = c1;
+  ctx.strokeStyle = isHungry ? '#DC2626' : c1;
   ctx.lineWidth = 1.6;
   ctx.beginPath();
-  ctx.roundRect(px - tw / 2, py - 34 * scale - 12, tw, 13, 6);
+  ctx.roundRect(px - tw / 2, tagY, tw, 13, 6);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = '#1E293B';
-  ctx.fillText(tagText, px, py - 34 * scale - 3);
+  ctx.fillText(tagText, px, tagY + 9);
+
+  if (isHungry) {
+    const bob = Math.sin(t / 180) * 2;
+    ctx.fillStyle = '#DC2626';
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(px - 22, tagY - 16 + bob, 44, 13, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 8px Fredoka, sans-serif';
+    ctx.fillText('❗ ĐÓI!', px, tagY - 6.5 + bob);
+  }
   ctx.restore();
 }

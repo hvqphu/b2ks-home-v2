@@ -15,16 +15,15 @@ import {
   MapPin,
   Music2,
   PawPrint,
-  Plus,
   RefreshCw,
   RotateCcw,
   Save,
   Sliders,
   Trash2,
+  Upload,
   UserCog,
   UserPlus,
   Users,
-  Volume2,
   X,
 } from 'lucide-react';
 import {
@@ -35,7 +34,6 @@ import {
   BuildingLayoutOverride,
   BuildingShape,
   CrossWorldRequest,
-  EnglishQuestion,
   OtherFamilySummary,
 } from '../types/b2ks';
 import {
@@ -51,7 +49,18 @@ import {
   STREET_WORLD,
   formatFamilyBrand,
 } from '../game/constants';
-import { getPetAccessoryDef, getPetSpecies, getPetVariantDef, renderPetArtSVG } from '../game/petSystem';
+import {
+  getMemberPetBonuses,
+  getPetAccessoryDef,
+  getPetSpecies,
+  getPetVariantDef,
+  renderPetArtSVG,
+} from '../game/petSystem';
+import {
+  exportEnglishBankToCsv,
+  GLOBAL_SUCCESS_UNITS,
+  parseEnglishBankCsv,
+} from '../game/englishCurriculum';
 
 interface Props {
   bridge: B2KSBridge;
@@ -99,24 +108,27 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
   const [questTitle, setQuestTitle] = useState('');
   const [questReward, setQuestReward] = useState(30);
 
-  // English Bank CRUD form state
-  const [editingQId, setEditingQId] = useState<string | null>(null);
-  const [qCat, setQCat] = useState<'grammar' | 'vocab'>('vocab');
-  const [qText, setQText] = useState('');
-  const [qOpt0, setQOpt0] = useState('');
-  const [qOpt1, setQOpt1] = useState('');
-  const [qOpt2, setQOpt2] = useState('');
-  const [qOpt3, setQOpt3] = useState('');
-  const [qAns, setQAns] = useState(0);
-  const [qExp, setQExp] = useState('');
+  // Shared Global Success English Bank Summary + CSV state
+  const [selectedEngGrade, setSelectedEngGrade] = useState<6 | 7 | 8 | 9>(6);
+  const [csvImportMode, setCsvImportMode] = useState<'merge' | 'replace'>('merge');
+  const [confirmResetBank, setConfirmResetBank] = useState(false);
+  const csvFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const completionChartRef = useRef<HTMLCanvasElement | null>(null);
   const englishChartRef = useRef<HTMLCanvasElement | null>(null);
 
   const state = bridge.getState();
   const user = bridge.getCurrentUser();
+  const isB2KSFamily = (bridge.getActiveFamilySlug?.() || 'b2ks') === 'b2ks';
+  const sharedEnglishBank = bridge.getGlobalEnglishBank?.() || state.englishQuestions || [];
   const kids = state.members.filter((m) => !bridge.isParent(m));
   const pendingRequests = state.crossWorldRequests.filter((r) => r.status === 'pending');
+
+  useEffect(() => {
+    if (!isB2KSFamily && tab === 'activities') {
+      setTab('charts');
+    }
+  }, [isB2KSFamily, tab]);
 
   const mergedActivityConfigs = useMemo(() => {
     const out = { ...DEFAULT_ACTIVITY_CONFIGS };
@@ -414,84 +426,64 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
   const handleApproveFamilyQuest = (taskId: number) => {
     const t = state.tasks.find((x) => x.id === taskId);
     if (!t || t.status === 'completed') return;
+    const now = Date.now();
     t.status = 'completed';
-    t.completedAt = Date.now();
+    t.completedAt = now;
     (t.participantIds || []).forEach((pid) => {
       const m = state.members.find((x) => x.id === pid);
-      if (m) m.points += t.reward;
+      if (m) {
+        const pb = getMemberPetBonuses(m);
+        m.points += t.reward + pb.starBonus;
+        m.pointsUpdatedAt = now;
+        m.memberUpdatedAt = now;
+      }
     });
     bridge.saveGame(true);
     bridge.updateHUD();
     bridge.playCoin();
     bridge.triggerConfetti();
-    bridge.showToast(`🎉 Nhiệm vụ Đồng đội hoàn tất! Mỗi bé nhận +${t.reward}⭐!`);
+    bridge.showToast(`🎉 Nhiệm vụ Đồng đội hoàn tất! Mỗi bé nhận +${t.reward}⭐ (+thưởng Thú cưng nếu có)!`);
     forceRefresh();
   };
 
-  const handleSaveEnglishQuestion = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!qText.trim() || !qOpt0.trim() || !qOpt1.trim() || !qOpt2.trim() || !qOpt3.trim()) {
-      bridge.playError();
-      bridge.showToast('⚠️ Vui lòng điền đầy đủ câu hỏi và 4 đáp án!');
-      return;
-    }
-
-    const newQ: EnglishQuestion = {
-      id: editingQId || `eq_${Date.now()}`,
-      cat: qCat,
-      q: qText.trim(),
-      opts: [qOpt0.trim(), qOpt1.trim(), qOpt2.trim(), qOpt3.trim()],
-      ans: qAns,
-      exp: qExp.trim() || 'Câu hỏi được bổ sung bởi Bố/Mẹ.',
-      custom: true,
-    };
-
-    if (editingQId) {
-      const idx = state.englishQuestions.findIndex((x) => x.id === editingQId);
-      if (idx !== -1) state.englishQuestions[idx] = newQ;
-    } else {
-      state.englishQuestions.unshift(newQ);
-    }
-
-    bridge.syncEnglishBankToFirebase(state.englishQuestions);
-    bridge.saveGame(true);
+  const handleExportEnglishCsv = () => {
+    const csvContent = exportEnglishBankToCsv(sharedEnglishBank);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `b2ks-english-bank-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(() => URL.revokeObjectURL(url), 10000);
     bridge.playSuccess();
-    bridge.showToast(
-      editingQId
-        ? '✅ Đã cập nhật câu hỏi lên Firebase!'
-        : '✅ Đã thêm câu hỏi mới vào ngân hàng Firebase!'
-    );
-
-    setEditingQId(null);
-    setQText('');
-    setQOpt0('');
-    setQOpt1('');
-    setQOpt2('');
-    setQOpt3('');
-    setQAns(0);
-    setQExp('');
-    forceRefresh();
+    bridge.showToast(`📤 Đã xuất ${sharedEnglishBank.length} câu hỏi Tiếng Anh ra file CSV (UTF-8)!`);
   };
 
-  const handleEditQuestion = (q: EnglishQuestion) => {
-    setEditingQId(q.id);
-    setQCat(q.cat);
-    setQText(q.q);
-    setQOpt0(q.opts[0]);
-    setQOpt1(q.opts[1]);
-    setQOpt2(q.opts[2]);
-    setQOpt3(q.opts[3]);
-    setQAns(q.ans);
-    setQExp(q.exp);
-  };
-
-  const handleDeleteQuestion = (id: string) => {
-    state.englishQuestions = state.englishQuestions.filter((x) => x.id !== id);
-    bridge.syncEnglishBankToFirebase(state.englishQuestions);
-    bridge.saveGame(true);
-    bridge.playClick();
-    bridge.showToast('🗑️ Đã xóa câu hỏi khỏi ngân hàng.');
-    forceRefresh();
+  const handleImportEnglishCsvFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = parseEnglishBankCsv(text);
+      if (parsed.questions.length === 0) {
+        bridge.playError();
+        bridge.showToast('⚠️ File CSV không có câu hỏi hợp lệ nào! Kiểm tra lại các cột id,grade,unit,cat,q,optA..D,ans,exp.');
+        return;
+      }
+      const res = bridge.importEnglishBankQuestions?.(parsed.questions, csvImportMode);
+      if (res) {
+        bridge.showToast(res.msg + (parsed.errors > 0 ? ` (Bỏ qua ${parsed.errors} dòng lỗi)` : ''));
+        if (res.ok) bridge.playSuccess();
+        else bridge.playError();
+        forceRefresh();
+      }
+    } catch {
+      bridge.playError();
+      bridge.showToast('❌ Không thể đọc file CSV đã chọn!');
+    }
   };
 
   const [downloadingZip, setDownloadingZip] = useState(false);
@@ -719,18 +711,20 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
             }`}
           >
             <GraduationCap className="w-3.5 h-3.5" />
-            Ngân Hàng Tiếng Anh ({state.englishQuestions.length})
+            Ngân Hàng Tiếng Anh ({sharedEnglishBank.length})
           </button>
-          <button
-            type="button"
-            onClick={() => setTab('activities')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
-              tab === 'activities' ? 'bg-[#E11D48] text-white' : 'bg-white text-[#2C3E50]'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            Hoạt Động &amp; Điểm
-          </button>
+          {isB2KSFamily && (
+            <button
+              type="button"
+              onClick={() => setTab('activities')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
+                tab === 'activities' ? 'bg-[#E11D48] text-white' : 'bg-white text-[#2C3E50]'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              Hoạt Động &amp; Điểm
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setTab('family_map')}
@@ -785,20 +779,36 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
                       return (
                         <div
                           key={kid.id}
-                          className="rounded-xl border-2 border-[#2C3E50] bg-white p-3 flex items-center justify-between"
+                          className="rounded-xl border-2 border-[#2C3E50] bg-white p-3 space-y-2"
                         >
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-2xl">{idx === 0 ? '🥇' : '🥈'}</span>
-                            <div>
-                              <div className="font-bold text-sm">{kid.name}</div>
-                              <div className="text-xs text-slate-500">
-                                Việc xong: {doneTasks} · Sở thú: {zooCount} loài
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-2xl">{idx === 0 ? '🥇' : '🥈'}</span>
+                              <div>
+                                <div className="font-bold text-sm">{kid.name}</div>
+                                <div className="text-xs text-slate-500">
+                                  Việc xong: {doneTasks} · Sở thú: {zooCount} loài
+                                </div>
                               </div>
                             </div>
+                            <span className="text-base font-bold text-amber-600 tabular-nums">
+                              {kid.points}⭐
+                            </span>
                           </div>
-                          <span className="text-base font-bold text-amber-600 tabular-nums">
-                            {kid.points}⭐
-                          </span>
+                          <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-100">
+                            {([6, 7, 8, 9] as const).map((g) => {
+                              const prog = kid.englishProgress?.[g] || { unit: 1, highScoreStreak: 0 };
+                              return (
+                                <span
+                                  key={g}
+                                  className="px-1.5 py-0.5 rounded bg-sky-50 border border-sky-200 text-[10px] font-bold text-sky-900"
+                                  title={`Lớp ${g}: Đang học Unit ${prog.unit}/12 (Chuỗi >8đ: ${prog.highScoreStreak}/3)`}
+                                >
+                                  📘 L{g}: U.{prog.unit} ({prog.highScoreStreak}/3)
+                                </span>
+                              );
+                            })}
+                          </div>
                         </div>
                       );
                     })}
@@ -981,152 +991,167 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
 
           {tab === 'english' && (
             <div className="space-y-4">
-              <form
-                onSubmit={handleSaveEnglishQuestion}
-                className="rounded-xl border-2 border-[#2C3E50] bg-sky-50 p-3.5 space-y-2.5"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-sm text-sky-900 flex items-center gap-1.5">
-                    <Plus className="w-4 h-4" />
-                    {editingQId ? 'Chỉnh sửa câu hỏi Tiếng Anh' : 'Thêm câu hỏi / từ vựng mới lên Firebase'}
-                  </h3>
-                  <select
-                    value={qCat}
-                    onChange={(e) => setQCat(e.target.value as 'grammar' | 'vocab')}
-                    className="px-2 py-1 rounded border-2 border-[#2C3E50] bg-white text-xs font-bold"
-                  >
-                    <option value="vocab">🔤 Từ vựng &amp; Giao tiếp</option>
-                    <option value="grammar">📘 Ngữ pháp</option>
-                  </select>
+              {/* Shared Global Bank Banner + CSV Actions */}
+              <div className="rounded-xl border-2 border-[#2C3E50] bg-sky-50 p-3.5 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-extrabold text-sm text-sky-950">
+                      🎓 Ngân Hàng Tiếng Anh Dùng Chung (MOET Global Success Lớp 6–9)
+                    </h3>
+                    <p className="text-xs text-sky-800 mt-0.5">
+                      Cơ sở dữ liệu Tiếng Anh này được <b>dùng chung cho tất cả khu phố trên toàn hệ thống</b> (hiện có{' '}
+                      <b>{sharedEnglishBank.length}</b> câu hỏi). Mọi chỉnh sửa qua CSV sẽ tự đồng bộ lên kho chung Firebase.
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-white border-2 border-sky-400 text-xs font-extrabold text-sky-900 tabular-nums shrink-0">
+                    📚 {sharedEnglishBank.length} câu
+                  </span>
                 </div>
 
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Câu hỏi tiếng Anh (VD: What does 'protect' mean?)"
-                    value={qText}
-                    onChange={(e) => setQText(e.target.value)}
-                    className="flex-1 px-3 py-1.5 rounded-lg border-2 border-[#2C3E50] bg-white text-sm"
-                  />
+                {/* CSV Export / Import / Reset Controls */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-sky-200">
                   <button
                     type="button"
-                    onClick={() => bridge.speakEnglish(qText || 'Hello students!', 0.9)}
-                    className="btn btn-sm btn-accent"
-                    title="Nghe thử phát âm"
+                    onClick={handleExportEnglishCsv}
+                    className="btn btn-sm btn-primary"
                   >
-                    <Volume2 className="w-4 h-4" />
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Xuất CSV ({sharedEnglishBank.length} câu)</span>
                   </button>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Đáp án A"
-                    value={qOpt0}
-                    onChange={(e) => setQOpt0(e.target.value)}
-                    className="px-2.5 py-1.5 rounded border-2 border-[#2C3E50] bg-white text-xs"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Đáp án B"
-                    value={qOpt1}
-                    onChange={(e) => setQOpt1(e.target.value)}
-                    className="px-2.5 py-1.5 rounded border-2 border-[#2C3E50] bg-white text-xs"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Đáp án C"
-                    value={qOpt2}
-                    onChange={(e) => setQOpt2(e.target.value)}
-                    className="px-2.5 py-1.5 rounded border-2 border-[#2C3E50] bg-white text-xs"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Đáp án D"
-                    value={qOpt3}
-                    onChange={(e) => setQOpt3(e.target.value)}
-                    className="px-2.5 py-1.5 rounded border-2 border-[#2C3E50] bg-white text-xs"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <select
-                    value={qAns}
-                    onChange={(e) => setQAns(Number(e.target.value))}
-                    className="px-2.5 py-1.5 rounded border-2 border-[#2C3E50] bg-white text-xs font-bold"
-                  >
-                    <option value={0}>Đáp án đúng: A</option>
-                    <option value={1}>Đáp án đúng: B</option>
-                    <option value={2}>Đáp án đúng: C</option>
-                    <option value={3}>Đáp án đúng: D</option>
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Giải thích ngắn bằng tiếng Việt"
-                    value={qExp}
-                    onChange={(e) => setQExp(e.target.value)}
-                    className="sm:col-span-2 px-2.5 py-1.5 rounded border-2 border-[#2C3E50] bg-white text-xs"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button type="submit" className="btn btn-sm btn-primary flex-1">
-                    {editingQId ? '💾 Cập nhật lên Firebase' : '➕ Thêm câu hỏi vào Firebase'}
-                  </button>
-                  {editingQId && (
+                  <div className="flex items-center gap-1.5 bg-white border-2 border-[#2C3E50] rounded-lg px-2 py-1">
+                    <select
+                      value={csvImportMode}
+                      onChange={(e) => setCsvImportMode(e.target.value as 'merge' | 'replace')}
+                      className="text-[11px] font-bold text-slate-700 bg-transparent focus:outline-none cursor-pointer"
+                    >
+                      <option value="merge">Chế độ: Gộp &amp; cập nhật theo ID</option>
+                      <option value="replace">Chế độ: Thay thế toàn bộ bộ đề</option>
+                    </select>
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditingQId(null);
-                        setQText('');
-                      }}
-                      className="btn btn-sm"
-                      style={{ background: '#64748B' }}
+                      onClick={() => csvFileInputRef.current?.click()}
+                      className="btn btn-sm btn-accent"
                     >
-                      Hủy sửa
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Nhập CSV</span>
+                    </button>
+                    <input
+                      ref={csvFileInputRef}
+                      type="file"
+                      accept=".csv,text/csv"
+                      onChange={handleImportEnglishCsvFile}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {confirmResetBank ? (
+                    <div className="flex items-center gap-1 ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const res = bridge.resetEnglishBankToDefault?.();
+                          setConfirmResetBank(false);
+                          if (res) {
+                            bridge.showToast(res.msg);
+                            bridge.playSuccess();
+                            forceRefresh();
+                          }
+                        }}
+                        className="btn btn-sm btn-danger"
+                      >
+                        Xác nhận khôi phục 1.920 câu
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmResetBank(false)}
+                        className="btn btn-sm"
+                        style={{ background: '#64748B' }}
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmResetBank(true)}
+                      className="btn btn-sm ml-auto"
+                      style={{ background: '#475569' }}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Khôi phục bộ chuẩn 1.920 câu</span>
                     </button>
                   )}
                 </div>
-              </form>
+              </div>
 
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {state.englishQuestions.map((q) => (
-                  <div
-                    key={q.id}
-                    className="rounded-lg border border-slate-300 bg-white p-2.5 flex items-start justify-between gap-2 text-xs"
-                  >
-                    <div>
-                      <span className="font-bold text-sky-700 mr-1.5">
-                        [{q.cat === 'grammar' ? 'Ngữ pháp' : 'Từ vựng'}]
-                      </span>
-                      <strong>{q.q}</strong>
-                      <div className="text-slate-500 mt-0.5">
-                        Đúng: <strong>{q.opts[q.ans]}</strong> · {q.exp}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleEditQuestion(q)}
-                        className="px-2 py-1 rounded bg-amber-400 text-slate-900 font-bold"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteQuestion(q.id)}
-                        className="p-1 rounded bg-rose-600 text-white"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              {/* Grade Filter Tabs */}
+              <div className="flex flex-wrap gap-2">
+                {([6, 7, 8, 9] as const).map((g) => {
+                  const gradeCount = sharedEnglishBank.filter((q) => (q.grade ?? 6) === g).length;
+                  const active = selectedEngGrade === g;
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => {
+                        bridge.playClick();
+                        setSelectedEngGrade(g);
+                      }}
+                      className={`px-3.5 py-1.5 rounded-xl border-2 text-xs font-extrabold cursor-pointer transition ${
+                        active
+                          ? 'bg-[#0284C7] border-[#2C3E50] text-white shadow'
+                          : 'bg-white border-slate-300 text-slate-700 hover:border-sky-400'
+                      }`}
+                    >
+                      📘 Lớp {g} ({gradeCount} câu · 12 Units)
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Grade Summary Table by Unit 1..12 */}
+              <div className="rounded-xl border-2 border-[#2C3E50] bg-white overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 border-b-2 border-[#2C3E50] text-slate-700">
+                        <th className="py-2 px-3 font-extrabold w-20">Unit</th>
+                        <th className="py-2 px-3 font-extrabold">Chủ đề Global Success Lớp {selectedEngGrade}</th>
+                        <th className="py-2 px-3 font-extrabold">Ngữ pháp trọng tâm</th>
+                        <th className="py-2 px-3 font-extrabold text-center w-20">Từ vựng</th>
+                        <th className="py-2 px-3 font-extrabold text-center w-20">Ngữ pháp</th>
+                        <th className="py-2 px-3 font-extrabold text-center w-20">Tổng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {GLOBAL_SUCCESS_UNITS.filter((u) => u.grade === selectedEngGrade).map((u) => {
+                        const unitQs = sharedEnglishBank.filter(
+                          (q) => (q.grade ?? 6) === u.grade && (q.unit ?? 1) === u.unit
+                        );
+                        const vocabCount = unitQs.filter((q) => q.cat === 'vocab').length;
+                        const grammarCount = unitQs.filter((q) => q.cat === 'grammar').length;
+                        return (
+                          <tr key={`${u.grade}_${u.unit}`} className="border-b border-slate-200 hover:bg-sky-50/50">
+                            <td className="py-2 px-3 font-extrabold text-sky-800">Unit {u.unit}</td>
+                            <td className="py-2 px-3 font-bold text-slate-800">{u.title}</td>
+                            <td className="py-2 px-3 text-[11px] text-slate-600">{u.grammarFocus}</td>
+                            <td className="py-2 px-3 text-center font-bold text-emerald-700 tabular-nums">{vocabCount}</td>
+                            <td className="py-2 px-3 text-center font-bold text-indigo-700 tabular-nums">{grammarCount}</td>
+                            <td className="py-2 px-3 text-center font-extrabold text-slate-900 tabular-nums">
+                              {vocabCount + grammarCount}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
 
-          {tab === 'activities' && (
+          {isB2KSFamily && tab === 'activities' && (
             <div className="space-y-4">
               {/* Section A: Adjust Kid Points */}
               <div className="rounded-xl border-2 border-[#2C3E50] bg-rose-50 p-3.5 space-y-3">
@@ -2003,6 +2028,24 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
 
           {tab === 'pets' && (
             <div className="space-y-4">
+              {/* 0. Clear Hunger & Bonus Rules Handbook */}
+              <div className="rounded-xl border-2 border-[#2C3E50] bg-emerald-50 p-3.5 space-y-1.5">
+                <h3 className="font-extrabold text-sm text-emerald-950">
+                  📜 Cơ Chế Độ No &amp; Cộng Thưởng Sao Thú Cưng
+                </h3>
+                <ul className="text-xs text-emerald-900 space-y-1 list-disc pl-4 leading-relaxed">
+                  <li>
+                    <b>Độ no giảm chậm khi đồng hành:</b> Chỉ khi thú cưng đang được chọn <b>Đồng hành ngoài map</b> thì Độ no mới giảm dần theo tốc độ riêng của từng loài (~<b>0.45% – 0.70%/phút</b>). Nếu cất thú cưng vào túi, độ no sẽ giữ nguyên.
+                  </li>
+                  <li>
+                    <b>Điều kiện kích hoạt cộng thưởng:</b> Thú cưng mang lại <b>+Tốc độ di chuyển</b> &amp; <b>+Điểm Sao</b> (khi hoàn thành việc nhà, bài tập, nhiệm vụ đồng đội, quiz Tiếng Anh, nói Tiếng Anh, ăn cơm, đi ngủ, nghỉ chân công viên, đọc truyện) chỉ khi đang <b>Đồng hành</b> và <b>Độ no &gt; 0%</b>.
+                  </li>
+                  <li>
+                    <b>Khi Độ no về 0% (❗ ĐÓI!):</b> Thú cưng hiện cảnh báo đói trên đầu và <b>tạm ngưng toàn bộ cộng Tốc độ &amp; Sao thưởng</b> cho đến khi được cho ăn lại.
+                  </li>
+                </ul>
+              </div>
+
               {/* 1. Children's Owned Pets Overview */}
               <div className="rounded-xl border-2 border-[#2C3E50] bg-purple-50 p-3.5 space-y-2.5">
                 <h3 className="font-bold text-sm text-purple-950">
@@ -2050,6 +2093,11 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
                                     </div>
                                     <div className="text-[10.5px] text-slate-600 flex flex-wrap gap-1.5">
                                       <span>{p.hatched ? `Lv.${p.level} (GĐ ${p.stage}/4)` : `🥚 Ấp ${Math.round(p.hatchProgress)}%`}</span>
+                                      {p.hatched && (
+                                        <span className={p.hunger <= 0 ? 'font-bold text-rose-600' : 'text-emerald-700 font-semibold'}>
+                                          • No: {Math.round(p.hunger)}%
+                                        </span>
+                                      )}
                                       <span style={{ color: varDef.badgeColor }} className="font-bold">
                                         • {varDef.label}
                                       </span>
@@ -2086,7 +2134,7 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
                   <div className="grid grid-cols-2 gap-1.5">
                     {PET_FOOD_CATALOG.map((fd) => (
                       <div key={fd.id} className="rounded-lg bg-white border border-slate-200 px-2 py-1 text-[11px]">
-                        <b>{fd.icon} {fd.name}</b> ({fd.price}⭐) • +{fd.xpGain}XP
+                        <b>{fd.icon} {fd.name}</b> ({fd.price}⭐) • +{fd.xpGain}XP · +{fd.hungerGain}% no
                       </div>
                     ))}
                   </div>
@@ -2123,7 +2171,7 @@ export const ParentalDashboardModal: React.FC<Props> = ({ bridge, onClose }) => 
                             {sp.name} ({sp.eggName})
                           </div>
                           <div className="text-[11px] text-slate-600">
-                            {sp.desc} • Chỉ số: <b>{sp.statLabel}</b>
+                            {sp.desc} • Chỉ số: <b>{sp.statLabel}</b> • ⏳ Đói: <b>-{sp.hungerDecayPerMin}%/phút</b>
                           </div>
                         </div>
                         <span className="points-pill text-xs">🥚 {sp.eggPrice}⭐</span>

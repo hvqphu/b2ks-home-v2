@@ -11,6 +11,7 @@ import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButto
 import { ComicLibraryModal } from './components/ComicLibraryModal';
 import { GamePasswordGate } from './components/GamePasswordGate';
 import { SoundThemePicker } from './components/SoundThemePicker';
+import { AdminPanelModal } from './components/AdminPanelModal';
 
 export default function App() {
   const [activeModal, setActiveModal] = useState<ActiveReactModal>(null);
@@ -151,6 +152,9 @@ export default function App() {
       )}
       {bridge && unlocked && activeModal === 'comic_library' && (
         <ComicLibraryModal bridge={bridge} onClose={close} />
+      )}
+      {bridge && unlocked && activeModal === 'admin_panel' && (
+        <AdminPanelModal bridge={bridge} onClose={close} />
       )}
     </>
   );

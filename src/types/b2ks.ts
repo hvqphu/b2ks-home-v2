@@ -47,6 +47,13 @@ export interface EnglishQuizRecord {
   total: number;
   stars: number;
   ts: number;
+  grade?: 6 | 7 | 8 | 9;
+  unit?: number;
+}
+
+export interface EnglishGradeProgress {
+  unit: number;
+  highScoreStreak: number;
 }
 
 export type PetStage = 0 | 1 | 2 | 3 | 4;
@@ -88,6 +95,7 @@ export interface PetSpeciesDef {
   accentColor: string;
   statLabel: string;
   desc: string;
+  hungerDecayPerMin: number;
   stages: PetStageDef[];
 }
 
@@ -228,6 +236,7 @@ export interface Member {
   customLabItems?: CustomLabItem[];
   unlockedZooAnimals?: string[];
   englishQuizHistory?: EnglishQuizRecord[];
+  englishProgress?: Record<number, EnglishGradeProgress>;
   pets?: OwnedPet[];
   activePetId?: string | null;
   petFoodInventory?: Record<string, number>;
@@ -365,6 +374,9 @@ export interface ActivityConfigItem {
 export interface EnglishQuestion {
   id: string;
   cat: 'grammar' | 'vocab';
+  grade?: 6 | 7 | 8 | 9;
+  unit?: number;
+  unitTitle?: string;
   q: string;
   opts: [string, string, string, string];
   ans: number;
@@ -405,6 +417,7 @@ export interface B2KSState {
   activityLogs: ActivityLogEntry[];
   activityConfigs?: Record<ActivityConfigId, ActivityConfigItem>;
   activityConfigsUpdatedAt?: number;
+  dailyParentAllowance?: number;
   englishQuestions: EnglishQuestion[];
   chatHistory: { sender: string; text: string; isEng: boolean; ts?: number }[];
   lastDailyReset: string;
@@ -414,6 +427,8 @@ export interface OtherFamilySummary {
   slug: string;
   familyName: string;
   updatedAt: number;
+  dailyParentAllowance?: number;
+  deleted?: boolean;
   members: Array<{
     id: string;
     name: string;
@@ -424,13 +439,29 @@ export interface OtherFamilySummary {
   }>;
 }
 
+export interface AdminNeighborhoodRecord {
+  slug: string;
+  familyName: string;
+  updatedAt: number;
+  dailyParentAllowance: number;
+  memberCount: number;
+  kidCount: number;
+  parents: Array<{
+    id: string;
+    name: string;
+    role: string;
+    points: number;
+  }>;
+}
+
 export type ActiveReactModal =
   | null
   | 'cross_world'
   | 'flea_market'
   | 'virtual_zoo'
   | 'parental_dashboard'
-  | 'comic_library';
+  | 'comic_library'
+  | 'admin_panel';
 
 export interface B2KSBridge {
   getState: () => B2KSState;
@@ -481,6 +512,19 @@ export interface B2KSBridge {
   getWeatherInfo?: () => WeatherInfo;
   refreshWeather?: (useGeolocation?: boolean) => Promise<WeatherInfo>;
   getMemberPresenceMap?: () => Record<string, { online: boolean; lastSeenAt: number }>;
+  getActiveFamilySlug?: () => string;
+  isB2KSDad?: () => boolean;
+  getGlobalEnglishBank?: () => EnglishQuestion[];
+  importEnglishBankQuestions?: (incoming: EnglishQuestion[], mode?: 'merge' | 'replace') => { ok: boolean; added: number; updated: number; total: number; msg: string };
+  resetEnglishBankToDefault?: () => { ok: boolean; total: number; msg: string };
+  adminListNeighborhoods?: () => Promise<AdminNeighborhoodRecord[]>;
+  adminCreateNeighborhood?: (familyName: string, dadName?: string, momName?: string) => Promise<{ ok: boolean; msg: string; slug?: string }>;
+  adminDeleteNeighborhood?: (slug: string) => Promise<{ ok: boolean; msg: string }>;
+  adminResetNeighborhoodPasswords?: (slug: string) => Promise<{ ok: boolean; msg: string }>;
+  adminAdjustParentAccount?: (
+    slug: string,
+    payload: { dailyParentAllowance?: number; parentPoints?: Record<string, number> }
+  ) => Promise<{ ok: boolean; msg: string }>;
   subscribe: (fn: () => void) => () => void;
 }
 
